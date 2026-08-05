@@ -102,11 +102,43 @@ fun PantallaInicio(
 @Preview(showBackground = true)
 @Composable
 fun PantallaInicioPreview() {
+    val actividadesPrueba = listOf(
+        ActividadFormativa(
+            id = 1,
+            titulo = "Kotlin básico",
+            descripcion = "Variables y funciones",
+            progreso = 100,
+            diasRestantes = 5,
+            prioridad = Prioridad.MEDIA
+        ),
+        ActividadFormativa(
+            id = 2,
+            titulo = "Semana 2 Android",
+            descripcion = "Modelado y reglas",
+            progreso = 60,
+            diasRestantes = 1,
+            prioridad = Prioridad.ALTA
+        ),
+        ActividadFormativa(
+            id = 3,
+            titulo = "Evidencias SENA",
+            descripcion = "Subir al repositorio",
+            progreso = 0,
+            diasRestantes = 2,
+            prioridad = Prioridad.ALTA
+        )
+    )
+
+    val promedio = promedioProgreso(actividadesPrueba)
+    val urgentes = actividadesUrgentes(actividadesPrueba)
+
+    val resumen = "Promedio: %.1f%%\nUrgentes: %d"
+        .format(promedio, urgentes.size)
 
     Labo_android_semana_02Theme {
         PantallaInicio(
             nombre = "Juan Manuel",
-            resumen = "Promedio: 53.3%\nUrgentes: 2"
+            resumen = resumen
         )
     }
 }
