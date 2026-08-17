@@ -18,35 +18,16 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
-import com.example.labo_android_semana_02.domain.ActividadFormativa
-import com.example.labo_android_semana_02.domain.Prioridad
-import com.example.labo_android_semana_02.domain.actividadesUrgentes
-import com.example.labo_android_semana_02.domain.promedioProgreso
+import com.example.labo_android_semana_02.domain.ActividadRepository
+import com.example.labo_android_semana_02.ui.screens.PantallaActividades
 import com.example.labo_android_semana_02.ui.theme.Labo_android_semana_02Theme
-
-// Colores sugeridos
-private val AgilePrimary = Color(0xFF000652)
-private val AgileSecondary = Color(0xFF00BFA5)
-private val AgileBackground = Color(0xFFF8F9FE)
-private val AgileSurface = Color(0xFFFFFFFF)
-private val AgileTextPrimary = Color(0xFF121420)
-private val AgileTextSecondary = Color(0xFF636981)
-
-private val AgileColorScheme = lightColorScheme(
-    primary = AgilePrimary,
-    secondary = AgileSecondary,
-    background = AgileBackground,
-    surface = AgileSurface,
-    onPrimary = Color.White,
-    onSurface = AgileTextPrimary
-)
 
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContent {
-            MaterialTheme(colorScheme = AgileColorScheme) {
-                PantallaPrincipal("Juan Manuel")
+            Labo_android_semana_02Theme {
+                MainApp()
             }
         }
     }
@@ -61,30 +42,15 @@ enum class AgileTab(val title: String) {
     TESTING("Pruebas")
 }
 
-@OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun PantallaPrincipal(nombre: String = "Aprendiz") {
+fun MainApp() {
     var selectedTab by remember { mutableStateOf(AgileTab.ACTIVIDADES) }
+    val nombreUsuario = "Juan Manuel"
 
     Scaffold(
-        topBar = {
-            TopAppBar(
-                title = {
-                    Text(
-                        "Formación CTMA",
-                        style = MaterialTheme.typography.titleLarge,
-                        fontWeight = FontWeight.Bold
-                    )
-                },
-                colors = TopAppBarDefaults.topAppBarColors(
-                    containerColor = AgilePrimary,
-                    titleContentColor = Color.White
-                )
-            )
-        },
         bottomBar = {
             NavigationBar(
-                containerColor = AgileSurface,
+                containerColor = MaterialTheme.colorScheme.surface,
                 tonalElevation = 8.dp
             ) {
                 AgileTab.entries.forEach { tab ->
@@ -92,12 +58,11 @@ fun PantallaPrincipal(nombre: String = "Aprendiz") {
                         selected = selectedTab == tab,
                         onClick = { selectedTab = tab },
                         icon = { 
-                            // Representación simple sin usar la librería de iconos pesada
                             Box(
                                 modifier = Modifier
                                     .size(8.dp)
                                     .clip(CircleShape)
-                                    .background(if (selectedTab == tab) AgilePrimary else AgileTextSecondary.copy(alpha = 0.3f))
+                                    .background(if (selectedTab == tab) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.outline.copy(alpha = 0.3f))
                             )
                         },
                         label = { 
@@ -106,89 +71,22 @@ fun PantallaPrincipal(nombre: String = "Aprendiz") {
                                 style = MaterialTheme.typography.labelLarge,
                                 fontWeight = if (selectedTab == tab) FontWeight.Bold else FontWeight.Normal
                             ) 
-                        },
-                        colors = NavigationBarItemDefaults.colors(
-                            selectedTextColor = AgilePrimary,
-                            unselectedTextColor = AgileTextSecondary,
-                            indicatorColor = AgilePrimary.copy(alpha = 0.1f)
-                        )
+                        }
                     )
                 }
             }
         }
     ) { paddingValues ->
-        Column(
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(paddingValues)
-                .background(AgileBackground)
-        ) {
-            Header(nombre)
-            
-            Box(modifier = Modifier.weight(1f)) {
-                when (selectedTab) {
-                    AgileTab.ACTIVIDADES -> SeccionActividades()
-                    AgileTab.MANIFESTO -> SeccionManifiesto()
-                    AgileTab.SCRUM -> SeccionScrum()
-                    AgileTab.TESTING -> SeccionPruebas()
-                }
+        Box(modifier = Modifier.padding(paddingValues)) {
+            when (selectedTab) {
+                AgileTab.ACTIVIDADES -> PantallaActividades(
+                    actividades = ActividadRepository.actividades,
+                    onActividadClick = { /* Navegación o detalle */ }
+                )
+                AgileTab.MANIFESTO -> SeccionManifiesto()
+                AgileTab.SCRUM -> SeccionScrum()
+                AgileTab.TESTING -> SeccionPruebas()
             }
-        }
-    }
-}
-
-@Composable
-private fun SeccionActividades() {
-    val actividades = remember {
-        listOf(
-            ActividadFormativa(1, "Kotlin básico", "Variables y funciones", 100, 5, Prioridad.MEDIA),
-            ActividadFormativa(2, "Semana 2 Android", "Modelado y reglas", 60, 1, Prioridad.ALTA),
-            ActividadFormativa(3, "Evidencias SENA", "Subir al repositorio", 0, 2, Prioridad.ALTA)
-        )
-    }
-
-    val promedio = promedioProgreso(actividades)
-    val urgentes = actividadesUrgentes(actividades)
-
-    LazyColumn(
-        modifier = Modifier.fillMaxSize(),
-        contentPadding = PaddingValues(16.dp),
-        verticalArrangement = Arrangement.spacedBy(12.dp)
-    ) {
-        item { SeccionTitulo("Resumen de Progreso", AgilePrimary) }
-        item {
-            Card(
-                modifier = Modifier.fillMaxWidth(),
-                shape = RoundedCornerShape(16.dp),
-                colors = CardDefaults.cardColors(containerColor = AgileSurface),
-                elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
-            ) {
-                Column(modifier = Modifier.padding(16.dp)) {
-                    Text(
-                        text = "Promedio General: %.1f%%".format(promedio),
-                        style = MaterialTheme.typography.headlineSmall,
-                        fontWeight = FontWeight.Bold,
-                        color = AgilePrimary
-                    )
-                    Spacer(modifier = Modifier.height(8.dp))
-                    Text(
-                        text = "Actividades Urgentes: ${urgentes.size}",
-                        style = MaterialTheme.typography.bodyLarge,
-                        color = if (urgentes.isNotEmpty()) Color.Red else AgileSecondary
-                    )
-                }
-            }
-        }
-        item { SeccionTitulo("Detalle de Actividades", AgilePrimary) }
-        items(actividades) { actividad ->
-            ItemCard(
-                Item(actividad.titulo, "${actividad.descripcion} - ${actividad.progreso}%"),
-                color = when(actividad.prioridad) {
-                    Prioridad.ALTA -> Color.Red
-                    Prioridad.MEDIA -> AgileSecondary
-                    Prioridad.BAJA -> AgileTextSecondary
-                }
-            )
         }
     }
 }
@@ -201,22 +99,13 @@ private fun SeccionManifiesto() {
         "Colaboración con el cliente sobre negociación de contratos.",
         "Respuesta ante el cambio sobre seguir un plan estricto."
     )
-    val principios = listOf(
-        "Satisfacer al cliente mediante entregas continuas.",
-        "Aceptar cambios incluso en etapas avanzadas.",
-        "Trabajar juntos diariamente.",
-        "Confiar en el equipo."
-    )
-
     LazyColumn(
         modifier = Modifier.fillMaxSize(),
         contentPadding = PaddingValues(16.dp),
         verticalArrangement = Arrangement.spacedBy(12.dp)
     ) {
-        item { SeccionTitulo("Valores principales", AgilePrimary) }
-        items(valores) { BulletCard(it, AgilePrimary) }
-        item { SeccionTitulo("Principios clave", AgileSecondary) }
-        items(principios) { BulletCard(it, AgileSecondary) }
+        item { Text("Manifiesto Ágil", style = MaterialTheme.typography.headlineMedium, fontWeight = FontWeight.Bold) }
+        items(valores) { BulletCard(it) }
     }
 }
 
@@ -232,8 +121,8 @@ private fun SeccionScrum() {
         contentPadding = PaddingValues(16.dp),
         verticalArrangement = Arrangement.spacedBy(12.dp)
     ) {
-        item { SeccionTitulo("Roles en Scrum", AgilePrimary) }
-        items(roles) { ItemCard(it, AgilePrimary) }
+        item { Text("Scrum Framework", style = MaterialTheme.typography.headlineMedium, fontWeight = FontWeight.Bold) }
+        items(roles) { ItemCard(it) }
     }
 }
 
@@ -248,105 +137,42 @@ private fun SeccionPruebas() {
         contentPadding = PaddingValues(16.dp),
         verticalArrangement = Arrangement.spacedBy(12.dp)
     ) {
-        item { SeccionTitulo("Tipos de Pruebas", AgileSecondary) }
-        items(pruebas) { ItemCard(it, AgileSecondary) }
+        item { Text("Testing", style = MaterialTheme.typography.headlineMedium, fontWeight = FontWeight.Bold) }
+        items(pruebas) { ItemCard(it) }
     }
 }
 
 @Composable
-private fun Header(nombre: String) {
-    Surface(
-        color = AgilePrimary,
-        shape = RoundedCornerShape(bottomStart = 32.dp, bottomEnd = 32.dp),
-        shadowElevation = 4.dp
-    ) {
-        Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(24.dp),
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            Surface(
-                modifier = Modifier
-                    .size(60.dp)
-                    .clip(CircleShape),
-                color = Color.White.copy(alpha = 0.2f)
-            ) {
-                Box(contentAlignment = Alignment.Center) {
-                    Text(text = nombre.first().toString(), color = Color.White, fontWeight = FontWeight.Bold)
-                }
-            }
-            Spacer(modifier = Modifier.width(16.dp))
-            Column {
-                Text(text = "Hola, $nombre", color = Color.White, fontWeight = FontWeight.Bold)
-                Text(text = "Anotaciones de clase", color = Color.White.copy(alpha = 0.7f), style = MaterialTheme.typography.bodySmall)
-            }
-        }
-    }
-}
-
-@Composable
-private fun SeccionTitulo(titulo: String, color: Color) {
-    Text(
-        text = titulo,
-        style = MaterialTheme.typography.titleMedium,
-        fontWeight = FontWeight.Bold,
-        color = color,
-        modifier = Modifier.padding(vertical = 8.dp)
-    )
-}
-
-@Composable
-private fun TextoCard(texto: String) {
-    Card(
-        shape = RoundedCornerShape(12.dp),
-        colors = CardDefaults.cardColors(containerColor = AgileSurface),
-        elevation = CardDefaults.cardElevation(defaultElevation = 1.dp)
-    ) {
-        Text(text = texto, modifier = Modifier.padding(16.dp), color = AgileTextSecondary)
-    }
-}
-
-@Composable
-private fun BulletCard(texto: String, color: Color) {
+private fun BulletCard(texto: String) {
     Card(
         shape = RoundedCornerShape(8.dp),
-        colors = CardDefaults.cardColors(containerColor = AgileSurface)
+        modifier = Modifier.fillMaxWidth()
     ) {
         Row(modifier = Modifier.padding(12.dp), verticalAlignment = Alignment.CenterVertically) {
-            Box(modifier = Modifier.size(6.dp).clip(CircleShape).background(color))
+            Box(modifier = Modifier.size(6.dp).clip(CircleShape).background(MaterialTheme.colorScheme.primary))
             Spacer(modifier = Modifier.width(12.dp))
-            Text(text = texto, style = MaterialTheme.typography.bodySmall)
+            Text(text = texto, style = MaterialTheme.typography.bodyMedium)
         }
     }
 }
 
 @Composable
-private fun ItemCard(item: Item, color: Color) {
+private fun ItemCard(item: Item) {
     Card(
         modifier = Modifier.fillMaxWidth(),
-        shape = RoundedCornerShape(12.dp),
-        colors = CardDefaults.cardColors(containerColor = AgileSurface)
+        shape = RoundedCornerShape(12.dp)
     ) {
-        Row(modifier = Modifier.padding(16.dp), verticalAlignment = Alignment.CenterVertically) {
-            Surface(color = color.copy(alpha = 0.1f), shape = RoundedCornerShape(8.dp), modifier = Modifier.size(40.dp)) {
-                Box(contentAlignment = Alignment.Center) {
-                    Text(text = item.titulo.first().toString(), fontWeight = FontWeight.Bold, color = color)
-                }
-            }
-            Spacer(modifier = Modifier.width(16.dp))
-            Column {
-                Text(text = item.titulo, fontWeight = FontWeight.Bold)
-                Text(text = item.descripcion, style = MaterialTheme.typography.bodySmall, color = AgileTextSecondary)
-            }
+        Column(modifier = Modifier.padding(16.dp)) {
+            Text(text = item.titulo, fontWeight = FontWeight.Bold, style = MaterialTheme.typography.titleMedium)
+            Text(text = item.descripcion, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
         }
     }
 }
 
 @Preview(showBackground = true)
 @Composable
-fun PantallaPrincipalPreview() {
-    MaterialTheme(colorScheme = AgileColorScheme) {
-        PantallaPrincipal("Juan Manuel")
+fun MainAppPreview() {
+    Labo_android_semana_02Theme {
+        MainApp()
     }
 }
