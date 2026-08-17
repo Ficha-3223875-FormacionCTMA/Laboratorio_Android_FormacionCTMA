@@ -33,7 +33,7 @@ fun actividadesUrgentes(
     actividades: List<ActividadFormativa>
 ): List<ActividadFormativa> {
     return actividades.filter {
-        it.progreso < 100 && it.diasRestantes <= 2
+        it.progreso < 100 && it.diasRestantes <= 3
     }
 }
 
