@@ -1,10 +1,11 @@
 package com.example.labo_android_semana_02.ui.components
 
+import androidx.compose.animation.animateContentSize
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.*
-import androidx.compose.runtime.Composable
+import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
@@ -15,31 +16,50 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import com.example.labo_android_semana_02.domain.ActividadFormativa
-import com.example.labo_android_semana_02.domain.Prioridad
 import com.example.labo_android_semana_02.ui.theme.Labo_android_semana_02Theme
+import java.text.SimpleDateFormat
+import java.util.*
 
 @Composable
 fun TarjetaActividad(
     actividad: ActividadFormativa,
     onClick: (ActividadFormativa) -> Unit,
+    onDelete: (ActividadFormativa) -> Unit,
+    onToggleStatus: (ActividadFormativa) -> Unit,
     modifier: Modifier = Modifier
 ) {
-    val colorPrioridad = when (actividad.prioridad) {
-        Prioridad.ALTA -> MaterialTheme.colorScheme.error
-        Prioridad.MEDIA -> MaterialTheme.colorScheme.tertiary
-        Prioridad.BAJA -> MaterialTheme.colorScheme.outline
+    val hoy = Calendar.getInstance().timeInMillis
+    val tresDiasEnMillis = 3 * 24 * 60 * 60 * 1000L
+    val esUrgente = actividad.progreso < 100 && (actividad.fechaEntrega - hoy) < tresDiasEnMillis
+    val esTerminada = actividad.progreso == 100
+
+    val colorIndicador = when {
+        esTerminada -> Color(0xFF00BFA5) // Verde (AgileSecondary)
+        esUrgente -> MaterialTheme.colorScheme.error // Rojo
+        else -> MaterialTheme.colorScheme.outline // Gris/Azul
     }
+
+    val formatoFecha = SimpleDateFormat("dd MMM yyyy", Locale.getDefault())
+    val fechaTexto = formatoFecha.format(Date(actividad.fechaEntrega))
+
+    var expandida by remember { mutableStateOf(false) }
 
     Card(
         modifier = modifier
             .fillMaxWidth()
-            .clickable { onClick(actividad) }
+            .animateContentSize()
+            .clickable { 
+                expandida = !expandida
+                onClick(actividad) 
+            }
             .semantics {
-                contentDescription = "Actividad: ${actividad.titulo}, progreso ${actividad.progreso} por ciento, prioridad ${actividad.prioridad}"
+                contentDescription = "Actividad: ${actividad.titulo}, progreso ${actividad.progreso} por ciento"
             },
         shape = RoundedCornerShape(16.dp),
-        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
-        elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
+        colors = CardDefaults.cardColors(
+            containerColor = if (esTerminada) MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f) else MaterialTheme.colorScheme.surface
+        ),
+        elevation = CardDefaults.cardElevation(defaultElevation = if (esTerminada) 0.dp else 2.dp)
     ) {
         Row(
             modifier = Modifier
@@ -47,9 +67,8 @@ fun TarjetaActividad(
                 .fillMaxWidth(),
             verticalAlignment = Alignment.CenterVertically
         ) {
-            // Indicador de prioridad
             Surface(
-                color = colorPrioridad,
+                color = colorIndicador,
                 shape = RoundedCornerShape(8.dp),
                 modifier = Modifier.size(12.dp, 40.dp)
             ) {}
@@ -57,39 +76,59 @@ fun TarjetaActividad(
             Spacer(modifier = Modifier.width(16.dp))
 
             Column(modifier = Modifier.weight(1f)) {
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Checkbox(
+                        checked = esTerminada,
+                        onCheckedChange = { onToggleStatus(actividad) },
+                        colors = CheckboxDefaults.colors(checkedColor = Color(0xFF00BFA5))
+                    )
+                    Text(
+                        text = actividad.titulo,
+                        style = MaterialTheme.typography.titleMedium,
+                        fontWeight = FontWeight.Bold,
+                        maxLines = if (expandida) Int.MAX_VALUE else 1,
+                        overflow = if (expandida) TextOverflow.Clip else TextOverflow.Ellipsis,
+                        color = if (esTerminada) MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f) else MaterialTheme.colorScheme.onSurface
+                    )
+                }
                 Text(
-                    text = actividad.titulo,
-                    style = MaterialTheme.typography.titleMedium,
-                    fontWeight = FontWeight.Bold,
-                    maxLines = 1,
-                    overflow = TextOverflow.Ellipsis
-                )
-                Text(
-                    text = actividad.descripcion,
+                    text = if (expandida) actividad.descripcion else "$fechaTexto - ${actividad.descripcion}",
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    maxLines = 2,
-                    overflow = TextOverflow.Ellipsis
+                    maxLines = if (expandida) Int.MAX_VALUE else 1,
+                    overflow = if (expandida) TextOverflow.Clip else TextOverflow.Ellipsis,
+                    modifier = Modifier.padding(start = 48.dp)
                 )
+                
+                if (expandida) {
+                    Spacer(modifier = Modifier.height(8.dp))
+                    Text(
+                        text = "Fecha de entrega: $fechaTexto",
+                        style = MaterialTheme.typography.labelSmall,
+                        color = MaterialTheme.colorScheme.primary,
+                        modifier = Modifier.padding(start = 48.dp)
+                    )
+                }
                 
                 Spacer(modifier = Modifier.height(8.dp))
                 
                 LinearProgressIndicator(
                     progress = { actividad.progreso / 100f },
-                    modifier = Modifier.fillMaxWidth(),
-                    color = MaterialTheme.colorScheme.primary,
-                    trackColor = MaterialTheme.colorScheme.primaryContainer,
+                    modifier = Modifier.fillMaxWidth().padding(start = 48.dp),
+                    color = colorIndicador,
+                    trackColor = colorIndicador.copy(alpha = 0.2f),
                 )
             }
 
-            Spacer(modifier = Modifier.width(16.dp))
+            Spacer(modifier = Modifier.width(8.dp))
 
-            Text(
-                text = "${actividad.progreso}%",
-                style = MaterialTheme.typography.labelLarge,
-                fontWeight = FontWeight.Bold,
-                color = MaterialTheme.colorScheme.primary
-            )
+            TextButton(
+                onClick = { onDelete(actividad) },
+                colors = ButtonDefaults.textButtonColors(contentColor = MaterialTheme.colorScheme.error),
+                contentPadding = PaddingValues(0.dp)
+            ) {
+                Text("X", fontWeight = FontWeight.ExtraBold)
+            }
         }
     }
 }
@@ -100,27 +139,13 @@ fun TarjetaActividadPreview() {
     Labo_android_semana_02Theme {
         Column(modifier = Modifier.padding(16.dp)) {
             TarjetaActividad(
-                actividad = ActividadFormativa(
-                    1, 
-                    "Título muy largo que debería truncarse con puntos suspensivos en la interfaz", 
-                    "Esta es una descripción detallada que también debería limitarse a máximo dos líneas para mantener la consistencia visual de la tarjeta.", 
-                    100, 
-                    5, 
-                    Prioridad.ALTA
-                ),
-                onClick = {}
+                actividad = ActividadFormativa(1, "Actividad Urgente", "Vence pronto.", 50, System.currentTimeMillis() + 86400000),
+                onClick = {}, onDelete = {}, onToggleStatus = {}
             )
             Spacer(modifier = Modifier.height(8.dp))
             TarjetaActividad(
-                actividad = ActividadFormativa(
-                    2, 
-                    "Progreso mínimo", 
-                    "Actividad recién iniciada.", 
-                    0, 
-                    10, 
-                    Prioridad.BAJA
-                ),
-                onClick = {}
+                actividad = ActividadFormativa(2, "Actividad Terminada", "Ya se hizo.", 100, System.currentTimeMillis() + 500000000),
+                onClick = {}, onDelete = {}, onToggleStatus = {}
             )
         }
     }

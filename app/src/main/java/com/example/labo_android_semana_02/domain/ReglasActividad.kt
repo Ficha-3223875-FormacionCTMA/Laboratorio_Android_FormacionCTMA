@@ -1,26 +1,24 @@
 package com.example.labo_android_semana_02.domain
 
+import java.util.Calendar
+
 fun validarActividad(
     titulo: String,
     progreso: Int
 ): List<String> {
     val errores = mutableListOf<String>()
-
-    if (titulo.isBlank()) {
-        errores.add("El título es obligatorio")
-    }
-
-    if (progreso !in 0..100) {
-        errores.add("El progreso debe estar entre 0 y 100")
-    }
-
+    if (titulo.isBlank()) errores.add("El título es obligatorio")
+    if (progreso !in 0..100) errores.add("El progreso debe estar entre 0 y 100")
     return errores
 }
 
 fun estadoActividad(
     progreso: Int,
-    diasRestantes: Int
+    fechaEntrega: Long
 ): String {
+    val hoy = Calendar.getInstance().timeInMillis
+    val diasRestantes = ((fechaEntrega - hoy) / (24 * 60 * 60 * 1000)).toInt()
+    
     return when {
         progreso == 100 -> "COMPLETADA"
         diasRestantes < 0 -> "VENCIDA"
@@ -32,8 +30,10 @@ fun estadoActividad(
 fun actividadesUrgentes(
     actividades: List<ActividadFormativa>
 ): List<ActividadFormativa> {
+    val hoy = Calendar.getInstance().timeInMillis
+    val tresDiasEnMillis = 3 * 24 * 60 * 60 * 1000L
     return actividades.filter {
-        it.progreso < 100 && it.diasRestantes <= 3
+        it.progreso < 100 && (it.fechaEntrega - hoy) <= tresDiasEnMillis
     }
 }
 
