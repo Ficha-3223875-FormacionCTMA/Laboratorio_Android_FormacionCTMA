@@ -23,6 +23,7 @@ fun PantallaActividades(
     actividades: List<ActividadFormativa>,
     onActividadClick: (ActividadFormativa) -> Unit,
     onDeleteActividad: (ActividadFormativa) -> Unit,
+    onEditActividad: (ActividadFormativa) -> Unit,
     onToggleStatus: (ActividadFormativa) -> Unit,
     onAddClick: () -> Unit,
     onReiniciarFiltros: () -> Unit = {}
@@ -86,6 +87,7 @@ fun PantallaActividades(
                             actividad = actividad,
                             onClick = onActividadClick,
                             onDelete = onDeleteActividad,
+                            onEdit = onEditActividad,
                             onToggleStatus = onToggleStatus
                         )
                     }
@@ -107,6 +109,7 @@ fun PantallaActividades(
                             actividad = actividad,
                             onClick = onActividadClick,
                             onDelete = onDeleteActividad,
+                            onEdit = onEditActividad,
                             onToggleStatus = onToggleStatus
                         )
                     }
@@ -147,6 +150,7 @@ fun PantallaActividadesPreview() {
             actividades = ActividadRepository.actividades,
             onActividadClick = {},
             onDeleteActividad = {},
+            onEditActividad = {},
             onToggleStatus = {},
             onAddClick = {}
         )

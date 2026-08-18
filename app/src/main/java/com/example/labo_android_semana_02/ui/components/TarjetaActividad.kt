@@ -25,18 +25,22 @@ fun TarjetaActividad(
     actividad: ActividadFormativa,
     onClick: (ActividadFormativa) -> Unit,
     onDelete: (ActividadFormativa) -> Unit,
+    onEdit: (ActividadFormativa) -> Unit,
     onToggleStatus: (ActividadFormativa) -> Unit,
     modifier: Modifier = Modifier
 ) {
     val hoy = Calendar.getInstance().timeInMillis
+    val diferenciaMillis = actividad.fechaEntrega - hoy
+    val diasRestantes = (diferenciaMillis / (24 * 60 * 60 * 1000L)).toInt()
+    
     val tresDiasEnMillis = 3 * 24 * 60 * 60 * 1000L
-    val esUrgente = actividad.progreso < 100 && (actividad.fechaEntrega - hoy) < tresDiasEnMillis
+    val esUrgente = actividad.progreso < 100 && diferenciaMillis < tresDiasEnMillis
     val esTerminada = actividad.progreso == 100
 
     val colorIndicador = when {
-        esTerminada -> Color(0xFF00BFA5) // Verde (AgileSecondary)
-        esUrgente -> MaterialTheme.colorScheme.error // Rojo
-        else -> MaterialTheme.colorScheme.outline // Gris/Azul
+        esTerminada -> Color(0xFF00BFA5)
+        esUrgente -> MaterialTheme.colorScheme.error
+        else -> MaterialTheme.colorScheme.outline
     }
 
     val formatoFecha = SimpleDateFormat("dd MMM yyyy", Locale.getDefault())
@@ -53,7 +57,7 @@ fun TarjetaActividad(
                 onClick(actividad) 
             }
             .semantics {
-                contentDescription = "Actividad: ${actividad.titulo}, progreso ${actividad.progreso} por ciento"
+                contentDescription = "Actividad: ${actividad.titulo}, ${if(esTerminada) "Terminada" else "Faltan $diasRestantes días"}"
             },
         shape = RoundedCornerShape(16.dp),
         colors = CardDefaults.cardColors(
@@ -122,12 +126,36 @@ fun TarjetaActividad(
 
             Spacer(modifier = Modifier.width(8.dp))
 
-            TextButton(
-                onClick = { onDelete(actividad) },
-                colors = ButtonDefaults.textButtonColors(contentColor = MaterialTheme.colorScheme.error),
-                contentPadding = PaddingValues(0.dp)
-            ) {
-                Text("X", fontWeight = FontWeight.ExtraBold)
+            Column(horizontalAlignment = Alignment.End) {
+                Text(
+                    text = when {
+                        esTerminada -> "OK"
+                        diasRestantes < 0 -> "Vencida"
+                        diasRestantes == 0 -> "Hoy"
+                        else -> "Faltan $diasRestantes d"
+                    },
+                    style = MaterialTheme.typography.labelSmall,
+                    fontWeight = FontWeight.Bold,
+                    color = colorIndicador
+                )
+                Row {
+                    TextButton(
+                        onClick = { onEdit(actividad) },
+                        colors = ButtonDefaults.textButtonColors(contentColor = MaterialTheme.colorScheme.primary),
+                        contentPadding = PaddingValues(0.dp),
+                        modifier = Modifier.sizeIn(minWidth = 32.dp)
+                    ) {
+                        Text("E", fontWeight = FontWeight.Bold)
+                    }
+                    TextButton(
+                        onClick = { onDelete(actividad) },
+                        colors = ButtonDefaults.textButtonColors(contentColor = MaterialTheme.colorScheme.error),
+                        contentPadding = PaddingValues(0.dp),
+                        modifier = Modifier.sizeIn(minWidth = 32.dp)
+                    ) {
+                        Text("X", fontWeight = FontWeight.ExtraBold)
+                    }
+                }
             }
         }
     }
@@ -140,12 +168,7 @@ fun TarjetaActividadPreview() {
         Column(modifier = Modifier.padding(16.dp)) {
             TarjetaActividad(
                 actividad = ActividadFormativa(1, "Actividad Urgente", "Vence pronto.", 50, System.currentTimeMillis() + 86400000),
-                onClick = {}, onDelete = {}, onToggleStatus = {}
-            )
-            Spacer(modifier = Modifier.height(8.dp))
-            TarjetaActividad(
-                actividad = ActividadFormativa(2, "Actividad Terminada", "Ya se hizo.", 100, System.currentTimeMillis() + 500000000),
-                onClick = {}, onDelete = {}, onToggleStatus = {}
+                onClick = {}, onDelete = {}, onEdit = {}, onToggleStatus = {}
             )
         }
     }
