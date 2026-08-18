@@ -47,7 +47,10 @@ enum class AgileTab(val title: String) {
 fun MainApp() {
     var selectedTab by remember { mutableStateOf(AgileTab.ACTIVIDADES) }
     val actividades = remember { mutableStateListOf<ActividadFormativa>().apply { addAll(ActividadRepository.actividades) } }
+    
+    // Estado para el diálogo (nueva o edición)
     var showDialog by remember { mutableStateOf(false) }
+    var actividadAEditar by remember { mutableStateOf<ActividadFormativa?>(null) }
 
     Scaffold(
         bottomBar = {
@@ -85,6 +88,10 @@ fun MainApp() {
                     actividades = actividades,
                     onActividadClick = { },
                     onDeleteActividad = { actividades.remove(it) },
+                    onEditActividad = { 
+                        actividadAEditar = it
+                        showDialog = true 
+                    },
                     onToggleStatus = { act ->
                         val index = actividades.indexOf(act)
                         if (index != -1) {
@@ -92,7 +99,10 @@ fun MainApp() {
                             actividades[index] = act.copy(progreso = nuevoProgreso)
                         }
                     },
-                    onAddClick = { showDialog = true },
+                    onAddClick = { 
+                        actividadAEditar = null
+                        showDialog = true 
+                    },
                     onReiniciarFiltros = {
                         actividades.clear()
                         actividades.addAll(ActividadRepository.actividades)
@@ -106,19 +116,34 @@ fun MainApp() {
     }
 
     if (showDialog) {
-        DialogNuevaActividad(
+        DialogActividad(
+            actividadInicial = actividadAEditar,
             onDismiss = { showDialog = false },
             onConfirm = { titulo, desc, dias ->
                 val cal = Calendar.getInstance()
                 cal.add(Calendar.DAY_OF_YEAR, dias)
-                val nueva = ActividadFormativa(
-                    id = (actividades.maxOfOrNull { it.id } ?: 0) + 1,
-                    titulo = titulo,
-                    descripcion = desc,
-                    progreso = 0,
-                    fechaEntrega = cal.timeInMillis
-                )
-                actividades.add(nueva)
+                
+                if (actividadAEditar == null) {
+                    // Nueva actividad
+                    val nueva = ActividadFormativa(
+                        id = (actividades.maxOfOrNull { it.id } ?: 0) + 1,
+                        titulo = titulo,
+                        descripcion = desc,
+                        progreso = 0,
+                        fechaEntrega = cal.timeInMillis
+                    )
+                    actividades.add(nueva)
+                } else {
+                    // Editar existente
+                    val index = actividades.indexOfFirst { it.id == actividadAEditar!!.id }
+                    if (index != -1) {
+                        actividades[index] = actividades[index].copy(
+                            titulo = titulo,
+                            descripcion = desc,
+                            fechaEntrega = cal.timeInMillis
+                        )
+                    }
+                }
                 showDialog = false
             }
         )
@@ -126,17 +151,25 @@ fun MainApp() {
 }
 
 @Composable
-fun DialogNuevaActividad(
+fun DialogActividad(
+    actividadInicial: ActividadFormativa?,
     onDismiss: () -> Unit,
     onConfirm: (String, String, Int) -> Unit
 ) {
-    var titulo by remember { mutableStateOf("") }
-    var descripcion by remember { mutableStateOf("") }
-    var diasParaEntrega by remember { mutableStateOf("7") }
+    var titulo by remember { mutableStateOf(actividadInicial?.titulo ?: "") }
+    var descripcion by remember { mutableStateOf(actividadInicial?.descripcion ?: "") }
+    
+    // Calcular días iniciales si es edición
+    val diasIniciales = if (actividadInicial != null) {
+        val hoy = Calendar.getInstance().timeInMillis
+        ((actividadInicial.fechaEntrega - hoy) / (24 * 60 * 60 * 1000L)).toInt().coerceAtLeast(0)
+    } else 7
+    
+    var diasParaEntrega by remember { mutableStateOf(diasIniciales.toString()) }
 
     AlertDialog(
         onDismissRequest = onDismiss,
-        title = { Text("Nueva Actividad", fontWeight = FontWeight.Bold) },
+        title = { Text(if (actividadInicial == null) "Nueva Actividad" else "Editar Actividad", fontWeight = FontWeight.Bold) },
         text = {
             Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
                 OutlinedTextField(
@@ -166,7 +199,7 @@ fun DialogNuevaActividad(
                     if (titulo.isNotBlank()) onConfirm(titulo, descripcion, dias) 
                 },
                 enabled = titulo.isNotBlank()
-            ) { Text("Agregar") }
+            ) { Text(if (actividadInicial == null) "Agregar" else "Guardar") }
         },
         dismissButton = {
             TextButton(onClick = onDismiss) { Text("Cancelar") }
