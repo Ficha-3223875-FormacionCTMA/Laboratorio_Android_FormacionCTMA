@@ -22,14 +22,20 @@ import com.example.labo_android_semana_02.ui.theme.Labo_android_semana_02Theme
 fun PantallaActividades(
     actividades: List<ActividadFormativa>,
     onActividadClick: (ActividadFormativa) -> Unit,
+    onDeleteActividad: (ActividadFormativa) -> Unit,
+    onToggleStatus: (ActividadFormativa) -> Unit,
+    onAddClick: () -> Unit,
     onReiniciarFiltros: () -> Unit = {}
 ) {
+    val pendientes = actividades.filter { it.progreso < 100 }.sortedBy { it.fechaEntrega }
+    val completadas = actividades.filter { it.progreso == 100 }.sortedByDescending { it.fechaEntrega }
+
     Scaffold(
         topBar = {
             TopAppBar(
                 title = {
                     Text(
-                        "Mis Actividades",
+                        "Formación CTMA",
                         style = MaterialTheme.typography.titleLarge,
                         fontWeight = FontWeight.Bold
                     )
@@ -39,11 +45,20 @@ fun PantallaActividades(
                     titleContentColor = MaterialTheme.colorScheme.onPrimary
                 )
             )
+        },
+        floatingActionButton = {
+            FloatingActionButton(
+                onClick = onAddClick,
+                containerColor = MaterialTheme.colorScheme.primary,
+                contentColor = MaterialTheme.colorScheme.onPrimary
+            ) {
+                Text("+", style = MaterialTheme.typography.headlineSmall, fontWeight = FontWeight.Bold)
+            }
         }
     ) { paddingValues ->
         if (actividades.isEmpty()) {
             EstadoVacio(
-                mensaje = "No hay actividades disponibles en este momento.",
+                mensaje = "No hay actividades disponibles.",
                 onAccion = onReiniciarFiltros,
                 modifier = Modifier.padding(paddingValues)
             )
@@ -56,23 +71,45 @@ fun PantallaActividades(
                 contentPadding = PaddingValues(16.dp),
                 verticalArrangement = Arrangement.spacedBy(12.dp)
             ) {
-                item {
-                    Text(
-                        text = "Formación CTMA - 2026",
-                        style = MaterialTheme.typography.labelMedium,
-                        color = MaterialTheme.colorScheme.secondary,
-                        modifier = Modifier.padding(bottom = 8.dp)
-                    )
+                if (pendientes.isNotEmpty()) {
+                    item {
+                        Text(
+                            text = "PENDIENTES (${pendientes.size})",
+                            style = MaterialTheme.typography.labelLarge,
+                            fontWeight = FontWeight.Bold,
+                            color = MaterialTheme.colorScheme.primary,
+                            modifier = Modifier.padding(vertical = 8.dp)
+                        )
+                    }
+                    items(items = pendientes, key = { it.id }) { actividad ->
+                        TarjetaActividad(
+                            actividad = actividad,
+                            onClick = onActividadClick,
+                            onDelete = onDeleteActividad,
+                            onToggleStatus = onToggleStatus
+                        )
+                    }
                 }
-                
-                items(
-                    items = actividades,
-                    key = { it.id } // Usamos el ID como clave estable
-                ) { actividad ->
-                    TarjetaActividad(
-                        actividad = actividad,
-                        onClick = onActividadClick
-                    )
+
+                if (completadas.isNotEmpty()) {
+                    item {
+                        Spacer(modifier = Modifier.height(16.dp))
+                        Text(
+                            text = "COMPLETADAS (${completadas.size})",
+                            style = MaterialTheme.typography.labelLarge,
+                            fontWeight = FontWeight.Bold,
+                            color = Color(0xFF00BFA5), // AgileSecondary
+                            modifier = Modifier.padding(vertical = 8.dp)
+                        )
+                    }
+                    items(items = completadas, key = { it.id }) { actividad ->
+                        TarjetaActividad(
+                            actividad = actividad,
+                            onClick = onActividadClick,
+                            onDelete = onDeleteActividad,
+                            onToggleStatus = onToggleStatus
+                        )
+                    }
                 }
             }
         }
@@ -93,21 +130,11 @@ fun EstadoVacio(
             horizontalAlignment = Alignment.CenterHorizontally,
             modifier = Modifier.padding(24.dp)
         ) {
-            Text(
-                text = "¡Ops!",
-                style = MaterialTheme.typography.headlineMedium,
-                fontWeight = FontWeight.Bold
-            )
+            Text(text = "¡Ops!", style = MaterialTheme.typography.headlineMedium, fontWeight = FontWeight.Bold)
             Spacer(modifier = Modifier.height(8.dp))
-            Text(
-                text = mensaje,
-                style = MaterialTheme.typography.bodyMedium,
-                color = MaterialTheme.colorScheme.onSurfaceVariant
-            )
+            Text(text = mensaje, style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
             Spacer(modifier = Modifier.height(16.dp))
-            Button(onClick = onAccion) {
-                Text("Recargar lista")
-            }
+            Button(onClick = onAccion) { Text("Recargar lista") }
         }
     }
 }
@@ -118,18 +145,10 @@ fun PantallaActividadesPreview() {
     Labo_android_semana_02Theme {
         PantallaActividades(
             actividades = ActividadRepository.actividades,
-            onActividadClick = {}
-        )
-    }
-}
-
-@Preview(showBackground = true)
-@Composable
-fun PantallaActividadesVaciaPreview() {
-    Labo_android_semana_02Theme {
-        PantallaActividades(
-            actividades = emptyList(),
-            onActividadClick = {}
+            onActividadClick = {},
+            onDeleteActividad = {},
+            onToggleStatus = {},
+            onAddClick = {}
         )
     }
 }
