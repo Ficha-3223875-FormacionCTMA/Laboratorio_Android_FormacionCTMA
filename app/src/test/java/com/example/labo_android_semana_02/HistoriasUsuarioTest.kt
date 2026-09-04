@@ -134,14 +134,18 @@ class HistoriasUsuarioTest {
     fun test_HU11_TimeRemaining_Calculation() {
         val hoy = Calendar.getInstance().timeInMillis
         // TC-42: Hoy
-        assertEquals("Hoy", estadoActividad(0, hoy))
+        assertEquals("Hoy", com.example.labo_android_semana_02.domain.calcularTextoTiempoRestante(0, hoy, hoy))
         
         // TC-42: Vencida
         val ayer = hoy - (24 * 60 * 60 * 1000L)
-        assertEquals("VENCIDA", estadoActividad(0, ayer))
+        assertEquals("Vencida", com.example.labo_android_semana_02.domain.calcularTextoTiempoRestante(0, ayer, hoy))
         
-        // TC-42: Completada (Prioridad sobre fecha)
-        assertEquals("COMPLETADA", estadoActividad(100, hoy))
+        // TC-42: Faltan 5 d
+        val en5Dias = hoy + (5 * 24 * 60 * 60 * 1000L)
+        assertEquals("Faltan 5 d", com.example.labo_android_semana_02.domain.calcularTextoTiempoRestante(0, en5Dias, hoy))
+        
+        // TC-42: Completada (OK)
+        assertEquals("OK", com.example.labo_android_semana_02.domain.calcularTextoTiempoRestante(100, hoy, hoy))
     }
 
     // HU-12 - Diseñar tarjetas de actividad expandibles con claves estables

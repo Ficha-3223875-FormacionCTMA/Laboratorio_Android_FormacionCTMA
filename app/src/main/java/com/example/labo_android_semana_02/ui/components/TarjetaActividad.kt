@@ -128,12 +128,7 @@ fun TarjetaActividad(
 
             Column(horizontalAlignment = Alignment.End) {
                 Text(
-                    text = when {
-                        esTerminada -> "OK"
-                        diasRestantes < 0 -> "Vencida"
-                        diasRestantes == 0 -> "Hoy"
-                        else -> "Faltan $diasRestantes d"
-                    },
+                    text = com.example.labo_android_semana_02.domain.calcularTextoTiempoRestante(actividad.progreso, actividad.fechaEntrega),
                     style = MaterialTheme.typography.labelSmall,
                     fontWeight = FontWeight.Bold,
                     color = colorIndicador

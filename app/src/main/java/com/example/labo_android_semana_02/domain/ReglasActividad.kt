@@ -27,6 +27,23 @@ fun estadoActividad(
     }
 }
 
+fun calcularTextoTiempoRestante(
+    progreso: Int,
+    fechaEntrega: Long,
+    hoy: Long = System.currentTimeMillis()
+): String {
+    if (progreso == 100) return "OK"
+    
+    val diferenciaMillis = fechaEntrega - hoy
+    val diasRestantes = (diferenciaMillis / (24 * 60 * 60 * 1000L)).toInt()
+    
+    return when {
+        diasRestantes < 0 -> "Vencida"
+        diasRestantes == 0 -> "Hoy"
+        else -> "Faltan $diasRestantes d"
+    }
+}
+
 fun actividadesUrgentes(
     actividades: List<ActividadFormativa>
 ): List<ActividadFormativa> {
