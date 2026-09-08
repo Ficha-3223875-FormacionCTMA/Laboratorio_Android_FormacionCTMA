@@ -36,3 +36,6 @@
 | R-23 | Pérdida de animación o salto de scroll al recomponer la lista por falta de claves estables |        Media |    Alta | Alto  | Asignar explícitamente el atributo `key = { it.id }` en el `items()` del `LazyColumn` |
 | R-24 | Colapso involuntario de la tarjeta al interactuar con sus botones o casillas internas       |         Baja |   Media | Medio | Aislar la propagación de eventos en los botones de acción dentro de la vista expandida|
 |      |                                                                                      |              |         |       |                                                                 |
+| R-25 | Pérdida irrecoverable de datos por migración destructiva al reconfigurar la base de datos |        Media |    Alta | Alto  | Implementar estrategias de migración explícita (Migration v1->v2) sin `fallbackToDestructiveMigration` |
+| R-26 | Inconsistencia de estado por duplicación de fuentes de verdad (Memoria vs. Base de Datos) |        Media |    Alta | Alto  | Establecer la base de datos/DataStore como única fuente de verdad (Single Source of Truth) observada con `Flow` |
+| R-27 | Bloqueo o congelamiento de la interfaz (ANR) por ejecutar operaciones I/O en el Hilo Principal |        Media |    Alta | Alto  | Despachar todas las operaciones de lectura/escritura SQL y DataStore usando `Dispatchers.IO` y Corrutinas |

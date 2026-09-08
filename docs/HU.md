@@ -346,3 +346,33 @@ Documento centralizado de Historias de Usuario (HUs), Criterios de Aceptación, 
 * **TC-44** - Visualización de la tarjeta en estado colapsado por defecto
 * **TC-45** - Expansión y despliegue de detalles y acciones secundarias al hacer clic
 * **TC-46** - Preservación del estado de expansión e identidad usando claves estables (`key`)
+
+---
+
+### **HU-13 - Persistencia local de reportes, categorías y preferencias de usuario**
+
+**Como** aprendiz de SENA / usuario de ReportaCTMA,  
+**quiero** que mis reportes registrados, categorías y preferencias de filtro se guarden localmente en el dispositivo,  
+**para** que la información se conserve al cerrar/reiniciar la app y pueda operar sin conexión a internet de forma consistente.
+
+---
+
+#### **Criterios de Aceptación**
+
+* **CA-13.1 (Persistencia tras reinicio):** Garantizar que los reportes, categorías y preferencias se conserven de manera íntegra al cerrar, matar el proceso o reabrir la aplicación.
+* **CA-13.2 (Sincronización reactiva):** Actualizar automáticamente la interfaz de usuario ante altas, cambios o bajas de datos utilizando `Flow`, sin requerir recargas o tiradas manuales.
+* **CA-13.3 (Evolución de esquema):** Asegurar que al migrar la base de datos de v1 a v2 (añadiendo el campo `resuelto`), los reportes previos no sufran pérdida de datos y el nuevo campo inicie por defecto en `false`.
+* **CA-13.4 (Manejo de inconsistencias/ID inexistente):** Presentar una vista o estado de error/vacío controlado ante la consulta de un ID inexistente, evitando bloqueos o cierres inesperados (*crashes*).
+
+---
+
+#### **Riesgos relacionados**
+* **R-25**
+* **R-26**
+* **R-27**
+
+#### **Casos de prueba relacionados**
+* **TC-47** - Verificación de persistencia de reportes y preferencias tras reinicio de la app
+* **TC-48** - Reactividad de la UI mediante Flow ante operaciones CRUD sin recarga manual
+* **TC-49** - Migración de esquema v1 a v2 (adición del campo `resuelto` por defecto en `false`)
+* **TC-50** - Manejo de estado de error controlado ante la consulta de un ID inexistente

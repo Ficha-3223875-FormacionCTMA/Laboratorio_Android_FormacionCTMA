@@ -57,3 +57,8 @@
 | TC-44 | HU-12 / CA-12.1 | Prueba UI       | Listado cargado en pantalla  | Inspeccionar las tarjetas en su estado inicial                  | Muestran únicamente el resumen compacto (título, prioridad y tiempo) |
 | TC-45 | HU-12 / CA-12.2 | Prueba UI       | Tarjeta colapsada visible    | Pulsar sobre la tarjeta para expandirla                         | Revela la descripción, la fecha completa y los botones editar/eliminar |
 | TC-46 | HU-12 / CA-12.3 | Prueba UI / Perf| Lista con tarjetas expandidas| Hacer scroll rápido y agregar/eliminar elementos en la lista    | Las tarjetas mantienen su estado de expansión e identidad sin saltos  |
+|       |                 |                 |                             |                                                                 |                                                                         |
+| TC-47 | HU-13 / CA-13.1 | Prueba UI / I/O | Reporte creado y filtro guardado | Forzar el cierre/reinicio de la aplicación desde el SO         | Los reportes creados y los filtros activos permanecen guardados          |
+| TC-48 | HU-13 / CA-13.2 | Reactividad      | Pantalla de lista abierta   | Insertar o actualizar un reporte en segundo plano/repositorio   | La UI se recompone y refleja el cambio de forma automática vía `Flow`   |
+| TC-49 | HU-13 / CA-13.3 | Migración BD    | App instalada en v1 con datos| Actualizar la app a v2 con el campo `resuelto` añadido          | Los datos se conservan e inician con el valor `resuelto = false`        |
+| TC-50 | HU-13 / CA-13.4 | Negativa        | Navegación a detalle activa | Consultar un ID de reporte que no existe en la base de datos     | Se muestra una vista de error/vacío amigable sin cierres (*crashes*)    |
