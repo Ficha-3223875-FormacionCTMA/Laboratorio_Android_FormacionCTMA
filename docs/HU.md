@@ -376,3 +376,39 @@ Documento centralizado de Historias de Usuario (HUs), Criterios de Aceptación, 
 * **TC-48** - Reactividad de la UI mediante Flow ante operaciones CRUD sin recarga manual
 * **TC-49** - Migración de esquema v1 a v2 (adición del campo `resuelto` por defecto en `false`)
 * **TC-50** - Manejo de estado de error controlado ante la consulta de un ID inexistente
+
+---
+
+## **HU-14 - Gestión de estados reactivos y concurrencia avanzada**
+
+**Como** desarrollador,  
+**quiero** que el listado de reportes/actividades se gestione mediante estados reactivos (Cargando, Contenido, Vacío, Error) y se combine con preferencias de DataStore y búsquedas,  
+**para** ofrecer una experiencia de usuario fluida, resiliente y libre de bloqueos.
+
+---
+
+#### **Criterios de Aceptación**
+
+* **CA-14.1 (Estado Listado):** Representar el listado mediante un `StateFlow` que emita selladamente: `Cargando`, `Contenido` (con datos), `Vacio` o `Error`.
+* **CA-14.2 (Operación Independiente):** Separar el estado de las operaciones de escritura (guardado/eliminación) en un `OperacionUiState` para no interrumpir la visualización del listado.
+* **CA-14.3 (Combinación Reactiva):** Combinar los datos de Room, el orden de DataStore y el término de búsqueda en un solo flujo, cancelando búsquedas obsoletas mediante `flatMapLatest` o `mapLatest`.
+* **CA-14.4 (Ciclo de Vida Seguro):** Recolectar los estados en la UI utilizando `collectAsStateWithLifecycle` para evitar desperdicio de recursos en segundo plano.
+* **CA-14.5 (Accesibilidad de Estados):** Mostrar indicadores visuales claros con texto descriptivo para carga, estados vacíos con acciones de reintento y mensajes de error comprensibles.
+* **CA-14.6 (Manejo de Errores):** Capturar excepciones en el `viewModelScope`, relanzando obligatoriamente `CancellationException` para permitir el funcionamiento correcto de las corrutinas.
+
+---
+
+#### **Riesgos relacionados**
+* **R-28**
+* **R-29**
+* **R-30**
+
+#### **Casos de prueba relacionados**
+* **TC-51** - Verificación de transición Cargando -> Vacío
+* **TC-52** - Prueba de actualización reactiva al insertar reporte
+* **TC-53** - Restauración de filtros desde DataStore
+* **TC-54** - Cancelación de búsquedas rápidas (concurrencia)
+* **TC-55** - Manejo de error con reintento (resiliencia)
+* **TC-56** - Cancelación de Job por ciclo de vida
+* **TC-57** - Consistencia de estado ante rotación de pantalla
+* **TC-58** - Ejecución de suite de pruebas unitarias reactivas
