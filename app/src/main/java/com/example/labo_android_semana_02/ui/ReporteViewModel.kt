@@ -3,9 +3,9 @@ package com.example.labo_android_semana_02.ui
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewModelScope
-import com.example.labo_android_semana_02.data.local.datastore.PreferenciasRepository
-import com.example.labo_android_semana_02.data.repository.RoomReporteRepository
 import com.example.labo_android_semana_02.domain.Reporte
+import com.example.labo_android_semana_02.domain.repository.PreferenciasRepository
+import com.example.labo_android_semana_02.domain.repository.ReporteRepository
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.*
@@ -13,7 +13,7 @@ import kotlinx.coroutines.launch
 
 @OptIn(ExperimentalCoroutinesApi::class)
 class ReporteViewModel(
-    private val repository: RoomReporteRepository,
+    private val repository: ReporteRepository,
     private val preferencias: PreferenciasRepository
 ) : ViewModel() {
 
@@ -91,7 +91,7 @@ class ReporteViewModel(
     }
 
     class Factory(
-        private val repository: RoomReporteRepository,
+        private val repository: ReporteRepository,
         private val preferencias: PreferenciasRepository
     ) : ViewModelProvider.Factory {
         @Suppress("UNCHECKED_CAST")
