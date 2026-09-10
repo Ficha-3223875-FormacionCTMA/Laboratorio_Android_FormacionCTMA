@@ -12,40 +12,42 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
-import com.example.labo_android_semana_02.domain.ActividadFormativa
-import com.example.labo_android_semana_02.domain.ActividadRepository
-import com.example.labo_android_semana_02.ui.components.TarjetaActividad
+import com.example.labo_android_semana_02.domain.Reporte
+import com.example.labo_android_semana_02.ui.ListadoUiState
+import com.example.labo_android_semana_02.ui.components.TarjetaReporte // Suponiendo que la renombramos o adaptamos
 import com.example.labo_android_semana_02.ui.theme.Labo_android_semana_02Theme
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun PantallaActividades(
-    actividades: List<ActividadFormativa>,
-    onActividadClick: (ActividadFormativa) -> Unit,
-    onDeleteActividad: (ActividadFormativa) -> Unit,
-    onEditActividad: (ActividadFormativa) -> Unit,
-    onToggleStatus: (ActividadFormativa) -> Unit,
+    uiState: ListadoUiState,
+    busqueda: String,
+    onBusquedaChange: (String) -> Unit,
+    onReporteClick: (Reporte) -> Unit,
+    onDeleteReporte: (Reporte) -> Unit,
+    onEditReporte: (Reporte) -> Unit,
+    onToggleStatus: (Reporte) -> Unit,
     onAddClick: () -> Unit,
-    onReiniciarFiltros: () -> Unit = {}
+    onRetry: () -> Unit
 ) {
-    val pendientes = actividades.filter { it.progreso < 100 }.sortedBy { it.fechaEntrega }
-    val completadas = actividades.filter { it.progreso == 100 }.sortedByDescending { it.fechaEntrega }
-
     Scaffold(
         topBar = {
-            TopAppBar(
-                title = {
-                    Text(
-                        "Formación CTMA",
-                        style = MaterialTheme.typography.titleLarge,
-                        fontWeight = FontWeight.Bold
+            Column {
+                TopAppBar(
+                    title = { Text("ReportaCTMA", fontWeight = FontWeight.Bold) },
+                    colors = TopAppBarDefaults.topAppBarColors(
+                        containerColor = MaterialTheme.colorScheme.primary,
+                        titleContentColor = MaterialTheme.colorScheme.onPrimary
                     )
-                },
-                colors = TopAppBarDefaults.topAppBarColors(
-                    containerColor = MaterialTheme.colorScheme.primary,
-                    titleContentColor = MaterialTheme.colorScheme.onPrimary
                 )
-            )
+                OutlinedTextField(
+                    value = busqueda,
+                    onValueChange = onBusquedaChange,
+                    modifier = Modifier.fillMaxWidth().padding(8.dp),
+                    placeholder = { Text("Buscar reporte...") },
+                    singleLine = true
+                )
+            }
         },
         floatingActionButton = {
             FloatingActionButton(
@@ -57,61 +59,66 @@ fun PantallaActividades(
             }
         }
     ) { paddingValues ->
-        if (actividades.isEmpty()) {
-            EstadoVacio(
-                mensaje = "No hay actividades disponibles.",
-                onAccion = onReiniciarFiltros,
-                modifier = Modifier.padding(paddingValues)
-            )
-        } else {
-            LazyColumn(
-                modifier = Modifier
-                    .fillMaxSize()
-                    .padding(paddingValues)
-                    .background(MaterialTheme.colorScheme.background),
-                contentPadding = PaddingValues(16.dp),
-                verticalArrangement = Arrangement.spacedBy(12.dp)
-            ) {
-                if (pendientes.isNotEmpty()) {
-                    item {
-                        Text(
-                            text = "PENDIENTES (${pendientes.size})",
-                            style = MaterialTheme.typography.labelLarge,
-                            fontWeight = FontWeight.Bold,
-                            color = MaterialTheme.colorScheme.primary,
-                            modifier = Modifier.padding(vertical = 8.dp)
-                        )
-                    }
-                    items(items = pendientes, key = { it.id }) { actividad ->
-                        TarjetaActividad(
-                            actividad = actividad,
-                            onClick = onActividadClick,
-                            onDelete = onDeleteActividad,
-                            onEdit = onEditActividad,
-                            onToggleStatus = onToggleStatus
-                        )
+        Box(modifier = Modifier.padding(paddingValues).fillMaxSize()) {
+            when (uiState) {
+                is ListadoUiState.Cargando -> {
+                    Column(
+                        modifier = Modifier.align(Alignment.Center),
+                        horizontalAlignment = Alignment.CenterHorizontally
+                    ) {
+                        CircularProgressIndicator()
+                        Spacer(modifier = Modifier.height(8.dp))
+                        Text("Cargando reportes...", style = MaterialTheme.typography.bodyMedium)
                     }
                 }
+                is ListadoUiState.Vacio -> {
+                    EstadoInformativo(
+                        mensaje = "No se encontraron reportes.",
+                        accionTexto = "Crear mi primer reporte",
+                        onAccion = onAddClick
+                    )
+                }
+                is ListadoUiState.Error -> {
+                    EstadoInformativo(
+                        mensaje = uiState.mensaje,
+                        accionTexto = "Reintentar",
+                        onAccion = onRetry
+                    )
+                }
+                is ListadoUiState.Contenido -> {
+                    val reportes = uiState.reportes
+                    val pendientes = reportes.filter { !it.resuelto }
+                    val completados = reportes.filter { it.resuelto }
 
-                if (completadas.isNotEmpty()) {
-                    item {
-                        Spacer(modifier = Modifier.height(16.dp))
-                        Text(
-                            text = "COMPLETADAS (${completadas.size})",
-                            style = MaterialTheme.typography.labelLarge,
-                            fontWeight = FontWeight.Bold,
-                            color = Color(0xFF00BFA5), // AgileSecondary
-                            modifier = Modifier.padding(vertical = 8.dp)
-                        )
-                    }
-                    items(items = completadas, key = { it.id }) { actividad ->
-                        TarjetaActividad(
-                            actividad = actividad,
-                            onClick = onActividadClick,
-                            onDelete = onDeleteActividad,
-                            onEdit = onEditActividad,
-                            onToggleStatus = onToggleStatus
-                        )
+                    LazyColumn(
+                        modifier = Modifier.fillMaxSize().background(MaterialTheme.colorScheme.background),
+                        contentPadding = PaddingValues(16.dp),
+                        verticalArrangement = Arrangement.spacedBy(12.dp)
+                    ) {
+                        if (pendientes.isNotEmpty()) {
+                            item { SeccionHeader("PENDIENTES", MaterialTheme.colorScheme.primary) }
+                            items(pendientes, key = { it.id }) { reporte ->
+                                TarjetaReporte(
+                                    reporte = reporte,
+                                    onClick = onReporteClick,
+                                    onDelete = onDeleteReporte,
+                                    onEdit = onEditReporte,
+                                    onToggleStatus = onToggleStatus
+                                )
+                            }
+                        }
+                        if (completados.isNotEmpty()) {
+                            item { SeccionHeader("RESUELTOS", Color(0xFF00BFA5)) }
+                            items(completados, key = { it.id }) { reporte ->
+                                TarjetaReporte(
+                                    reporte = reporte,
+                                    onClick = onReporteClick,
+                                    onDelete = onDeleteReporte,
+                                    onEdit = onEditReporte,
+                                    onToggleStatus = onToggleStatus
+                                )
+                            }
+                        }
                     }
                 }
             }
@@ -120,39 +127,27 @@ fun PantallaActividades(
 }
 
 @Composable
-fun EstadoVacio(
-    mensaje: String,
-    onAccion: () -> Unit,
-    modifier: Modifier = Modifier
-) {
-    Box(
-        modifier = modifier.fillMaxSize(),
-        contentAlignment = Alignment.Center
-    ) {
-        Column(
-            horizontalAlignment = Alignment.CenterHorizontally,
-            modifier = Modifier.padding(24.dp)
-        ) {
-            Text(text = "¡Ops!", style = MaterialTheme.typography.headlineMedium, fontWeight = FontWeight.Bold)
-            Spacer(modifier = Modifier.height(8.dp))
-            Text(text = mensaje, style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
-            Spacer(modifier = Modifier.height(16.dp))
-            Button(onClick = onAccion) { Text("Recargar lista") }
-        }
-    }
+fun SeccionHeader(titulo: String, color: Color) {
+    Text(
+        text = titulo,
+        style = MaterialTheme.typography.labelLarge,
+        fontWeight = FontWeight.Bold,
+        color = color,
+        modifier = Modifier.padding(vertical = 8.dp)
+    )
 }
 
-@Preview(showBackground = true)
 @Composable
-fun PantallaActividadesPreview() {
-    Labo_android_semana_02Theme {
-        PantallaActividades(
-            actividades = ActividadRepository.actividades,
-            onActividadClick = {},
-            onDeleteActividad = {},
-            onEditActividad = {},
-            onToggleStatus = {},
-            onAddClick = {}
-        )
+fun EstadoInformativo(
+    mensaje: String,
+    accionTexto: String,
+    onAccion: () -> Unit
+) {
+    Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+        Column(horizontalAlignment = Alignment.CenterHorizontally, modifier = Modifier.padding(24.dp)) {
+            Text(text = mensaje, style = MaterialTheme.typography.bodyLarge, color = MaterialTheme.colorScheme.onSurfaceVariant)
+            Spacer(modifier = Modifier.height(16.dp))
+            Button(onClick = onAccion) { Text(accionTexto) }
+        }
     }
 }

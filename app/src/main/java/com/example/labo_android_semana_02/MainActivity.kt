@@ -15,16 +15,27 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
-import com.example.labo_android_semana_02.domain.ActividadFormativa
-import com.example.labo_android_semana_02.domain.ActividadRepository
+import androidx.room.Room
+import com.example.labo_android_semana_02.data.local.datastore.DataStorePreferenciasRepository
+import com.example.labo_android_semana_02.data.local.db.AppDatabase
+import com.example.labo_android_semana_02.data.repository.RoomReporteRepository
 import com.example.labo_android_semana_02.domain.Prioridad
+import com.example.labo_android_semana_02.domain.Reporte
+import com.example.labo_android_semana_02.domain.repository.PreferenciasRepository
+import com.example.labo_android_semana_02.domain.repository.ReporteRepository
 import com.example.labo_android_semana_02.ui.FormularioActividadUiState
+import com.example.labo_android_semana_02.ui.ListadoUiState
+import com.example.labo_android_semana_02.ui.OperacionUiState
+import com.example.labo_android_semana_02.ui.ReporteViewModel
 import com.example.labo_android_semana_02.ui.screens.DetalleActividad
 import com.example.labo_android_semana_02.ui.screens.FormularioActividad
 import com.example.labo_android_semana_02.ui.screens.PantallaActividades
@@ -35,11 +46,24 @@ import java.text.SimpleDateFormat
 import java.util.*
 
 class MainActivity : ComponentActivity() {
+
+    private lateinit var db: AppDatabase
+    private lateinit var reporteRepository: RoomReporteRepository
+    private lateinit var preferenciasRepository: PreferenciasRepository
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        
+        // Inicialización manual (sin Hilt)
+        db = Room.databaseBuilder(applicationContext, AppDatabase::class.java, "reportes_db")
+            .addMigrations(AppDatabase.MIGRATION_1_2)
+            .build()
+        reporteRepository = RoomReporteRepository(db.reporteDao())
+        preferenciasRepository = DataStorePreferenciasRepository(applicationContext)
+
         setContent {
             Labo_android_semana_02Theme {
-                MainApp()
+                MainApp(reporteRepository, preferenciasRepository)
             }
         }
     }
@@ -48,73 +72,77 @@ class MainActivity : ComponentActivity() {
 private data class Item(val titulo: String, val descripcion: String)
 
 enum class AgileTab(val title: String) {
-    ACTIVIDADES("Actividades"),
+    ACTIVIDADES("Reportes"),
     MANIFESTO("Manifiesto"),
     SCRUM("Scrum"),
     TESTING("Pruebas")
 }
 
 @Composable
-fun MainApp() {
+fun MainApp(
+    repository: RoomReporteRepository,
+    preferencias: PreferenciasRepository
+) {
     val navController = rememberNavController()
-    // Fuente de verdad reactiva para toda la app
-    val actividades = remember { 
-        mutableStateListOf<ActividadFormativa>().apply { 
-            addAll(ActividadRepository.actividades) 
-        } 
-    }
+    val viewModel: ReporteViewModel = viewModel(
+        factory = ReporteViewModel.Factory(repository, preferencias)
+    )
 
-    // Estado compartido para edición (elevado a MainApp)
-    var actividadAEditar by remember { mutableStateOf<ActividadFormativa?>(null) }
+    val uiState by viewModel.uiState.collectAsStateWithLifecycle()
+    val operacionState by viewModel.operacionState.collectAsStateWithLifecycle()
+    val busqueda by viewModel.busqueda.collectAsStateWithLifecycle()
+
+    var reporteAEditar by remember { mutableStateOf<Reporte?>(null) }
 
     NavHost(navController = navController, startDestination = "activities") {
         composable("activities") {
             PantallaPrincipal(
-                actividades = actividades,
-                onActividadClick = { id -> navController.navigate("activities/$id") },
+                uiState = uiState,
+                busqueda = busqueda,
+                onBusquedaChange = { viewModel.onBusquedaChange(it) },
+                onReporteClick = { reporte -> navController.navigate("activities/${reporte.id}") },
                 onAddClick = { 
-                    actividadAEditar = null
+                    reporteAEditar = null
                     navController.navigate("activities/form") 
                 },
-                onDelete = { act -> actividades.remove(act) },
-                onEdit = { act ->
-                    actividadAEditar = act
+                onDelete = { viewModel.eliminarReporte(it) },
+                onEdit = { reporte ->
+                    reporteAEditar = reporte
                     navController.navigate("activities/form")
                 },
-                onToggle = { act ->
-                    val index = actividades.indexOf(act)
-                    if (index != -1) {
-                        val nuevoProgreso = if (act.progreso == 100) 0 else 100
-                        actividades[index] = act.copy(progreso = nuevoProgreso)
-                    }
-                }
+                onToggle = { reporte ->
+                    viewModel.guardarReporte(reporte.copy(resuelto = !reporte.resuelto))
+                },
+                onRetry = { /* Reintento de carga si fuera necesario */ }
             )
         }
         composable("activities/form") {
             FormularioScreen(
-                actividadAEditar = actividadAEditar,
-                onGuardar = { nuevaActividad ->
-                    val index = actividades.indexOfFirst { it.id == nuevaActividad.id }
-                    if (index != -1) {
-                        actividades[index] = nuevaActividad
-                    } else {
-                        actividades.add(nuevaActividad)
-                    }
-                    actividadAEditar = null
+                reporteAEditar = reporteAEditar,
+                operacionState = operacionState,
+                onGuardar = { nuevoReporte ->
+                    viewModel.guardarReporte(nuevoReporte)
+                },
+                onExito = {
+                    viewModel.resetOperacion()
                     navController.popBackStack()
                 },
                 onBack = { 
-                    actividadAEditar = null
+                    reporteAEditar = null
                     navController.popBackStack() 
-                },
-                nextId = (actividades.maxOfOrNull { it.id } ?: 0) + 1
+                }
             )
         }
         composable("activities/{id}") { backStackEntry ->
             val id = backStackEntry.arguments?.getString("id")?.toIntOrNull()
-            val actividad = actividades.find { it.id == id }
-            DetalleActividad(
-                actividad = actividad,
+            // El detalle también podría ser reactivo observando el id desde el VM
+            val reporteState by viewModel.uiState.collectAsStateWithLifecycle()
+            val reporte = (reporteState as? ListadoUiState.Contenido)?.reportes?.find { it.id == id }
+            
+            // Adaptador para DetalleActividad (que usa ActividadFormativa, pero lo adaptamos)
+            // Para este lab, asumo que DetalleActividad puede adaptarse o creamos DetalleReporte
+            DetalleReporteContent(
+                reporte = reporte,
                 onBack = { navController.popBackStack() }
             )
         }
@@ -123,12 +151,15 @@ fun MainApp() {
 
 @Composable
 fun PantallaPrincipal(
-    actividades: List<ActividadFormativa>,
-    onActividadClick: (Int) -> Unit,
+    uiState: ListadoUiState,
+    busqueda: String,
+    onBusquedaChange: (String) -> Unit,
+    onReporteClick: (Reporte) -> Unit,
     onAddClick: () -> Unit,
-    onDelete: (ActividadFormativa) -> Unit,
-    onEdit: (ActividadFormativa) -> Unit,
-    onToggle: (ActividadFormativa) -> Unit
+    onDelete: (Reporte) -> Unit,
+    onEdit: (Reporte) -> Unit,
+    onToggle: (Reporte) -> Unit,
+    onRetry: () -> Unit
 ) {
     var selectedTab by remember { mutableStateOf(AgileTab.ACTIVIDADES) }
 
@@ -165,13 +196,15 @@ fun PantallaPrincipal(
         Box(modifier = Modifier.padding(paddingValues)) {
             when (selectedTab) {
                 AgileTab.ACTIVIDADES -> PantallaActividades(
-                    actividades = actividades,
-                    onActividadClick = { act -> onActividadClick(act.id) },
-                    onDeleteActividad = onDelete,
-                    onEditActividad = onEdit,
+                    uiState = uiState,
+                    busqueda = busqueda,
+                    onBusquedaChange = onBusquedaChange,
+                    onReporteClick = onReporteClick,
+                    onDeleteReporte = onDelete,
+                    onEditReporte = onEdit,
                     onToggleStatus = onToggle,
                     onAddClick = onAddClick,
-                    onReiniciarFiltros = { }
+                    onRetry = onRetry
                 )
                 AgileTab.MANIFESTO -> SeccionManifiesto()
                 AgileTab.SCRUM -> SeccionScrum()
@@ -183,65 +216,91 @@ fun PantallaPrincipal(
 
 @Composable
 fun FormularioScreen(
-    actividadAEditar: ActividadFormativa?,
-    onGuardar: (ActividadFormativa) -> Unit,
-    onBack: () -> Unit,
-    nextId: Int
+    reporteAEditar: Reporte?,
+    operacionState: OperacionUiState,
+    onGuardar: (Reporte) -> Unit,
+    onExito: () -> Unit,
+    onBack: () -> Unit
 ) {
-    val coroutineScope = rememberCoroutineScope()
-    
-    // Elevación de estado simple para el borrador del formulario
-    var titulo by rememberSaveable { mutableStateOf(actividadAEditar?.titulo ?: "") }
-    var descripcion by rememberSaveable { mutableStateOf(actividadAEditar?.descripcion ?: "") }
+    // Elevación de estado para el borrador
+    var titulo by rememberSaveable { mutableStateOf(reporteAEditar?.titulo ?: "") }
+    var descripcion by rememberSaveable { mutableStateOf(reporteAEditar?.descripcion ?: "") }
     
     val formatDisplay = SimpleDateFormat("dd/MM/yyyy", Locale.getDefault())
-    val fechaInicial = actividadAEditar?.let { formatDisplay.format(Date(it.fechaEntrega)) } ?: ""
+    val fechaInicial = reporteAEditar?.let { formatDisplay.format(Date(it.fecha)) } ?: ""
     
     var fecha by rememberSaveable { mutableStateOf(fechaInicial) }
-    var prioridad by rememberSaveable { mutableStateOf(actividadAEditar?.prioridad ?: Prioridad.MEDIA) }
-    var progreso by rememberSaveable { mutableStateOf(actividadAEditar?.progreso?.toString() ?: "0") }
-    var guardando by remember { mutableStateOf(false) }
+    var progreso by rememberSaveable { mutableStateOf(if(reporteAEditar?.resuelto == true) "100" else "0") }
 
-    // Reconstrucción del UiState para pasarlo al componente stateless
-    val uiState = buildUiState(titulo, descripcion, fecha, prioridad, progreso, guardando)
+    val guardando = operacionState is OperacionUiState.Cargando
+    
+    LaunchedEffect(operacionState) {
+        if (operacionState is OperacionUiState.Exito) {
+            onExito()
+        }
+    }
+
+    val uiState = buildUiState(titulo, descripcion, fecha, Prioridad.MEDIA, progreso, guardando)
 
     FormularioActividad(
         uiState = uiState,
         onTituloChange = { titulo = it },
         onDescripcionChange = { descripcion = it },
         onFechaChange = { fecha = it },
-        onPrioridadChange = { prioridad = it },
+        onPrioridadChange = { /* Prioridad fija para Reportes */ },
         onProgresoChange = { progreso = it },
         onGuardar = {
             if (uiState.puedeGuardar && !guardando) {
-                guardando = true
-                coroutineScope.launch {
-                    delay(800) // Protección contra doble toque y feedback visual
-                    val format = SimpleDateFormat("dd/MM/yyyy", Locale.getDefault())
-                    val fechaLong = try {
-                        format.parse(fecha)?.time ?: System.currentTimeMillis()
-                    } catch (e: Exception) {
-                        System.currentTimeMillis()
-                    }
-                    
-                    val nueva = ActividadFormativa(
-                        id = actividadAEditar?.id ?: nextId,
-                        titulo = titulo,
-                        descripcion = descripcion,
-                        progreso = progreso.toIntOrNull() ?: 0,
-                        fechaEntrega = fechaLong,
-                        prioridad = prioridad
-                    )
-                    onGuardar(nueva)
+                val format = SimpleDateFormat("dd/MM/yyyy", Locale.getDefault())
+                val fechaLong = try {
+                    format.parse(fecha)?.time ?: System.currentTimeMillis()
+                } catch (e: Exception) {
+                    System.currentTimeMillis()
                 }
+                
+                val reporte = Reporte(
+                    id = reporteAEditar?.id ?: 0,
+                    titulo = titulo,
+                    descripcion = descripcion,
+                    fecha = fechaLong,
+                    categoriaId = 1, // Por defecto
+                    resuelto = progreso == "100"
+                )
+                onGuardar(reporte)
             }
         },
         onBack = onBack
     )
 }
 
+@Composable
+fun DetalleReporteContent(
+    reporte: Reporte?,
+    onBack: () -> Unit
+) {
+    Scaffold(
+        topBar = {
+            TextButton(onClick = onBack) { Text("< Volver") }
+        }
+    ) { p ->
+        if (reporte == null) {
+            Box(Modifier.padding(p).fillMaxSize(), contentAlignment = Alignment.Center) {
+                Text("Reporte no encontrado")
+            }
+        } else {
+            Column(Modifier.padding(p).padding(16.dp)) {
+                Text(reporte.titulo, style = MaterialTheme.typography.headlineMedium, fontWeight = FontWeight.Bold)
+                Spacer(Modifier.height(8.dp))
+                Text(reporte.descripcion)
+                Spacer(Modifier.height(16.dp))
+                Text("Estado: ${if(reporte.resuelto) "Resuelto" else "Pendiente"}")
+            }
+        }
+    }
+}
+
 /**
- * Lógica de negocio para construir el estado del formulario y sus validaciones.
+ * Lógica de validación (Reutilizada y ajustada para Reporte)
  */
 fun buildUiState(
     titulo: String,
@@ -253,47 +312,25 @@ fun buildUiState(
 ): FormularioActividadUiState {
     val errores = mutableMapOf<String, String>()
     
-    // Título: Obligatorio, 3-80 caracteres.
-    if (titulo.isBlank()) {
-        errores["titulo"] = "El título es obligatorio"
-    } else if (titulo.length < 3) {
-        errores["titulo"] = "Mínimo 3 caracteres"
-    } else if (titulo.length > 80) {
-        errores["titulo"] = "Máximo 80 caracteres"
-    }
+    if (titulo.isBlank() || titulo.length < 3) errores["titulo"] = "Título inválido (min 3)"
+    if (titulo.length > 80) errores["titulo"] = "Máximo 80 caracteres"
+    if (descripcion.length > 240) errores["descripcion"] = "Máximo 240 caracteres"
     
-    // Descripción: Opcional, máximo 240 caracteres.
-    if (descripcion.length > 240) {
-        errores["descripcion"] = "Máximo 240 caracteres"
-    }
-    
-    // Fecha: dd/mm/aaaa, no anterior a hoy.
     val format = SimpleDateFormat("dd/MM/yyyy", Locale.getDefault()).apply { isLenient = false }
     try {
         if (fecha.isNotBlank()) {
             val date = format.parse(fecha)
-            if (date != null) {
-                val cal = Calendar.getInstance().apply { 
-                    set(Calendar.HOUR_OF_DAY, 0); set(Calendar.MINUTE, 0); set(Calendar.SECOND, 0); set(Calendar.MILLISECOND, 0)
-                }
-                if (date.before(cal.time)) {
-                    errores["fecha"] = "No puede ser anterior a hoy"
-                }
-            }
+            val cal = Calendar.getInstance().apply { set(Calendar.HOUR_OF_DAY, 0); set(Calendar.MINUTE, 0); set(Calendar.SECOND, 0); set(Calendar.MILLISECOND, 0) }
+            if (date != null && date.before(cal.time)) errores["fecha"] = "No puede ser anterior a hoy"
         } else {
             errores["fecha"] = "Fecha obligatoria"
         }
     } catch (e: Exception) {
-        errores["fecha"] = "Formato inválido (dd/mm/aaaa)"
+        errores["fecha"] = "Formato dd/mm/aaaa"
     }
 
-    // Progreso: Numérico entre 0 y 100.
     val progInt = progreso.toIntOrNull()
-    if (progInt == null) {
-        errores["progreso"] = "Debe ser un número entero"
-    } else if (progInt < 0 || progInt > 100) {
-        errores["progreso"] = "Debe estar entre 0 y 100"
-    }
+    if (progInt == null || progInt !in 0..100) errores["progreso"] = "Rango 0-100"
 
     return FormularioActividadUiState(
         titulo = titulo,
@@ -307,7 +344,7 @@ fun buildUiState(
     )
 }
 
-// --- Secciones de contenido teórico conservadas ---
+// --- Secciones teóricas ---
 
 @Composable
 private fun SeccionManifiesto() {
@@ -384,13 +421,5 @@ private fun ItemCard(item: Item) {
             Text(text = item.titulo, fontWeight = FontWeight.Bold, style = MaterialTheme.typography.titleMedium)
             Text(text = item.descripcion, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
         }
-    }
-}
-
-@Preview(showBackground = true)
-@Composable
-fun MainAppPreview() {
-    Labo_android_semana_02Theme {
-        MainApp()
     }
 }
