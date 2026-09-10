@@ -20,6 +20,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
@@ -27,43 +28,78 @@ import androidx.navigation.compose.rememberNavController
 import androidx.room.Room
 import com.example.labo_android_semana_02.data.local.datastore.DataStorePreferenciasRepository
 import com.example.labo_android_semana_02.data.local.db.AppDatabase
+import com.example.labo_android_semana_02.data.remote.RemoteActividadDataSource
+import com.example.labo_android_semana_02.data.remote.SessionTokenProvider
+import com.example.labo_android_semana_02.data.remote.api.ActividadApi
+import com.example.labo_android_semana_02.data.repository.OfflineActividadRepository
 import com.example.labo_android_semana_02.data.repository.RoomReporteRepository
 import com.example.labo_android_semana_02.domain.Prioridad
 import com.example.labo_android_semana_02.domain.Reporte
 import com.example.labo_android_semana_02.domain.repository.PreferenciasRepository
 import com.example.labo_android_semana_02.domain.repository.ReporteRepository
-import com.example.labo_android_semana_02.ui.FormularioActividadUiState
-import com.example.labo_android_semana_02.ui.ListadoUiState
-import com.example.labo_android_semana_02.ui.OperacionUiState
-import com.example.labo_android_semana_02.ui.ReporteViewModel
+import com.example.labo_android_semana_02.ui.*
 import com.example.labo_android_semana_02.ui.screens.DetalleActividad
 import com.example.labo_android_semana_02.ui.screens.FormularioActividad
 import com.example.labo_android_semana_02.ui.screens.PantallaActividades
+import com.example.labo_android_semana_02.ui.screens.PantallaActividadesRemotas
 import com.example.labo_android_semana_02.ui.theme.Labo_android_semana_02Theme
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
+import kotlinx.serialization.json.Json
+import okhttp3.MediaType.Companion.toMediaType
+import okhttp3.OkHttpClient
+import okhttp3.logging.HttpLoggingInterceptor
+import retrofit2.Retrofit
+import retrofit2.converter.kotlinx.serialization.asConverterFactory
 import java.text.SimpleDateFormat
 import java.util.*
+import java.util.concurrent.TimeUnit
 
 class MainActivity : ComponentActivity() {
 
     private lateinit var db: AppDatabase
     private lateinit var reporteRepository: RoomReporteRepository
+    private lateinit var actividadRepository: OfflineActividadRepository
     private lateinit var preferenciasRepository: PreferenciasRepository
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         
-        // Inicialización manual (sin Hilt)
+        // Base de Datos
         db = Room.databaseBuilder(applicationContext, AppDatabase::class.java, "reportes_db")
             .addMigrations(AppDatabase.MIGRATION_1_2)
             .build()
+        
+        // Red (Retrofit + OkHttp)
+        val json = Json { ignoreUnknownKeys = true }
+        val loggingInterceptor = HttpLoggingInterceptor().apply { 
+            level = HttpLoggingInterceptor.Level.BODY 
+            redactHeader("Authorization") // Prohibido loguear el token
+        }
+        
+        val okHttpClient = OkHttpClient.Builder()
+            .addInterceptor(loggingInterceptor)
+            .connectTimeout(15, TimeUnit.SECONDS)
+            .readTimeout(15, TimeUnit.SECONDS)
+            .build()
+        
+        val retrofit = Retrofit.Builder()
+            .baseUrl("https://TU-MOCK-SERVER.mock.pstmn.io/") // URL Simulada
+            .client(okHttpClient)
+            .addConverterFactory(json.asConverterFactory("application/json".toMediaType()))
+            .build()
+        
+        val api = retrofit.create(ActividadApi::class.java)
+        val remoteDataSource = RemoteActividadDataSource(api, SessionTokenProvider())
+        
+        // Repositorios
         reporteRepository = RoomReporteRepository(db.reporteDao())
+        actividadRepository = OfflineActividadRepository(db.actividadDao(), remoteDataSource)
         preferenciasRepository = DataStorePreferenciasRepository(applicationContext)
 
         setContent {
             Labo_android_semana_02Theme {
-                MainApp(reporteRepository, preferenciasRepository)
+                MainApp(reporteRepository, actividadRepository, preferenciasRepository)
             }
         }
     }
@@ -73,6 +109,7 @@ private data class Item(val titulo: String, val descripcion: String)
 
 enum class AgileTab(val title: String) {
     ACTIVIDADES("Reportes"),
+    REMOTO("Sincro"),
     MANIFESTO("Manifiesto"),
     SCRUM("Scrum"),
     TESTING("Pruebas")
@@ -80,15 +117,25 @@ enum class AgileTab(val title: String) {
 
 @Composable
 fun MainApp(
-    repository: RoomReporteRepository,
+    reporteRepo: ReporteRepository,
+    actividadRepo: com.example.labo_android_semana_02.domain.repository.ActividadRepository,
     preferencias: PreferenciasRepository
 ) {
     val navController = rememberNavController()
     val viewModel: ReporteViewModel = viewModel(
-        factory = ReporteViewModel.Factory(repository, preferencias)
+        factory = ReporteViewModel.Factory(reporteRepo as RoomReporteRepository, preferencias)
+    )
+    val syncViewModel: ActividadViewModel = viewModel(
+        factory = object : ViewModelProvider.Factory {
+            @Suppress("UNCHECKED_CAST")
+            override fun <T : androidx.lifecycle.ViewModel> create(modelClass: Class<T>): T {
+                return ActividadViewModel(actividadRepo) as T
+            }
+        }
     )
 
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
+    val syncUiState by syncViewModel.uiState.collectAsStateWithLifecycle()
     val operacionState by viewModel.operacionState.collectAsStateWithLifecycle()
     val busqueda by viewModel.busqueda.collectAsStateWithLifecycle()
 
@@ -98,6 +145,7 @@ fun MainApp(
         composable("activities") {
             PantallaPrincipal(
                 uiState = uiState,
+                syncUiState = syncUiState,
                 busqueda = busqueda,
                 onBusquedaChange = { viewModel.onBusquedaChange(it) },
                 onReporteClick = { reporte -> navController.navigate("activities/${reporte.id}") },
@@ -113,7 +161,8 @@ fun MainApp(
                 onToggle = { reporte ->
                     viewModel.guardarReporte(reporte.copy(resuelto = !reporte.resuelto))
                 },
-                onRetry = { /* Reintento de carga si fuera necesario */ }
+                onRetry = { /* Reintento de carga si fuera necesario */ },
+                onRefresh = { syncViewModel.refresh() }
             )
         }
         composable("activities/form") {
@@ -152,6 +201,7 @@ fun MainApp(
 @Composable
 fun PantallaPrincipal(
     uiState: ListadoUiState,
+    syncUiState: ActividadesUiState,
     busqueda: String,
     onBusquedaChange: (String) -> Unit,
     onReporteClick: (Reporte) -> Unit,
@@ -159,7 +209,8 @@ fun PantallaPrincipal(
     onDelete: (Reporte) -> Unit,
     onEdit: (Reporte) -> Unit,
     onToggle: (Reporte) -> Unit,
-    onRetry: () -> Unit
+    onRetry: () -> Unit,
+    onRefresh: () -> Unit
 ) {
     var selectedTab by remember { mutableStateOf(AgileTab.ACTIVIDADES) }
 
@@ -205,6 +256,11 @@ fun PantallaPrincipal(
                     onToggleStatus = onToggle,
                     onAddClick = onAddClick,
                     onRetry = onRetry
+                )
+                AgileTab.REMOTO -> PantallaActividadesRemotas(
+                    uiState = syncUiState,
+                    onRefresh = onRefresh,
+                    onActividadClick = { act -> /* Navegación si aplica */ }
                 )
                 AgileTab.MANIFESTO -> SeccionManifiesto()
                 AgileTab.SCRUM -> SeccionScrum()

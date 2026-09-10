@@ -6,19 +6,23 @@
         <option name="selectionMode" value="DROPDOWN" />
         <DialogSelection />
       </SelectionState>
-      <SelectionState runConfigName="test_HU13_CA02_InsertAndGetReporte_Reactive()">
+      <SelectionState runConfigName="test_HU14_CA56_SalirDuranteOperacion_Cancelacion()">
         <option name="selectionMode" value="DROPDOWN" />
         <DialogSelection />
       </SelectionState>
-      <SelectionState runConfigName="test_HU13_CA04_GetInexistentReporte_Controlled()">
+      <SelectionState runConfigName="test_HU14_CA57_GirarPantalla_ConservaEstado()">
         <option name="selectionMode" value="DROPDOWN" />
         <DialogSelection />
       </SelectionState>
-      <SelectionState runConfigName="test_HU13_CA03_Migration1To2_DataPersistence()">
+      <SelectionState runConfigName="test_HU14_CA58_SuiteSinThreadSleep()">
         <option name="selectionMode" value="DROPDOWN" />
         <DialogSelection />
       </SelectionState>
-      <SelectionState runConfigName="ExampleInstrumentedTest">
+      <SelectionState runConfigName="test_HU15_CA01_Refresh_UpdatesRoom()">
+        <option name="selectionMode" value="DROPDOWN" />
+        <DialogSelection />
+      </SelectionState>
+      <SelectionState runConfigName="test_HU15_CA03_RefreshError_PreservesCache()">
         <option name="selectionMode" value="DROPDOWN" />
         <DialogSelection />
       </SelectionState>

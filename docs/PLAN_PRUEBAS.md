@@ -71,3 +71,10 @@
 | TC-56 | HU-14 / CA-14.6 | Ciclo de vida   | Operación en progreso       | Salir de la app o cerrar pantalla durante guardado              | El Job de la corrutina se cancela al destruirse el `viewModelScope`     |
 | TC-57 | HU-14 / CA-14.4 | Cambio Conf     | Formulario lleno            | Girar la pantalla o recrear Activity                            | No se duplica el guardado y el `StateFlow` conserva el estado actual    |
 | TC-58 | HU-14 / CA-14.x | Prueba Unitaria | Suite de pruebas            | Ejecutar suite con `runTest` y FakeRepository                   | Las pruebas verifican transiciones de estado sin usar `Thread.sleep`    |
+|       |                 |                 |                             |                                                                 |                                                                         |
+| TC-59 | HU-15 / CA-01   | API Integration | Server con 200 OK           | Ejecutar Refresco manual en la UI                               | Los datos se guardan en Room y la UI se actualiza automáticamente       |
+| TC-60 | HU-15 / CA-02   | API Integration | Server con 200 []           | Ejecutar Refresco con respuesta vacía                           | Se muestra estado Vacío; el caché anterior se limpia según política     |
+| TC-61 | HU-15 / CA-03   | Resiliencia     | Timeout / Offline           | Intentar refrescar sin conexión pero con caché                  | Se muestran datos antiguos y un banner de "Error al actualizar"         |
+| TC-62 | HU-15 / CA-05   | Seguridad       | Auth 401                    | Forzar respuesta 401 en Mock Server                             | La UI muestra mensaje de sesión expirada; no se loguean secretos        |
+| TC-63 | HU-15 / CA-06   | Robustez        | 500 / JSON corrupto         | Forzar error de servidor o formato inválido                     | El caché local permanece intacto; se muestra error técnico en UI        |
+| TC-64 | HU-15 / CA-07   | Concurrencia    | Dos refrescos rápidos       | Pulsar "Reintentar" múltiples veces rápidamente                 | Solo se procesa una actualización final; Room mantiene integridad       |

@@ -43,3 +43,7 @@
 | R-28 | Desbordamiento de recursos por recolección infinita de Flows en pantallas inactivas  |        Media |    Alta | Alto  | Usar `collectAsStateWithLifecycle` y `WhileSubscribed(5000)` en el `stateIn` |
 | R-29 | Búsquedas inconsistentes o "Race Conditions" al realizar peticiones rápidas seguidas |        Media |    Media | Medio | Implementar `flatMapLatest` o `mapLatest` para cancelar flujos de búsqueda previos |
 | R-30 | UI bloqueada o inconsistente ante fallos de persistencia no capturados en corrutinas |        Media |    Alta | Alto  | Implementar bloques `try-catch` capturando excepciones esperadas y relanzando `CancellationException` |
+|      |                                                                                      |              |         |       |                                                                 |
+| R-31 | Fuga de credenciales o tokens por inclusión en logs de depuración o código fuente    |         Baja | Crítica | Alto  | Prohibir literales, usar TokenProvider y desactivar logs de headers Auth en producción |
+| R-32 | Pérdida de datos locales al recibir una respuesta remota parcial o errónea           |        Media |    Alta | Alto  | Implementar transacciones atómicas en Room y validar integridad del DTO antes de limpiar caché |
+| R-33 | Inconsistencia visual al mostrar datos obsoletos sin avisar del fallo de red         |         Baja |   Media | Medio | Mostrar indicador de "Actualizado a las..." y banner de error separado para el refresco |

@@ -2,7 +2,7 @@
   "formatVersion": 1,
   "database": {
     "version": 2,
-    "identityHash": "fd7a3656f8ca64529f90f1c721bea436",
+    "identityHash": "1c3df864ef94dc61ea9e694af6d6fa8f",
     "entities": [
       {
         "tableName": "reportes",
@@ -108,12 +108,68 @@
         },
         "indices": [],
         "foreignKeys": []
+      },
+      {
+        "tableName": "actividades",
+        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`id` INTEGER NOT NULL, `titulo` TEXT NOT NULL, `descripcion` TEXT NOT NULL, `progreso` INTEGER NOT NULL, `fechaEntrega` INTEGER NOT NULL, `prioridad` TEXT NOT NULL, `resuelto` INTEGER NOT NULL, PRIMARY KEY(`id`))",
+        "fields": [
+          {
+            "fieldPath": "id",
+            "columnName": "id",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "titulo",
+            "columnName": "titulo",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "descripcion",
+            "columnName": "descripcion",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "progreso",
+            "columnName": "progreso",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "fechaEntrega",
+            "columnName": "fechaEntrega",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "prioridad",
+            "columnName": "prioridad",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "resuelto",
+            "columnName": "resuelto",
+            "affinity": "INTEGER",
+            "notNull": true
+          }
+        ],
+        "primaryKey": {
+          "autoGenerate": false,
+          "columnNames": [
+            "id"
+          ]
+        },
+        "indices": [],
+        "foreignKeys": []
       }
     ],
     "views": [],
     "setupQueries": [
       "CREATE TABLE IF NOT EXISTS room_master_table (id INTEGER PRIMARY KEY,identity_hash TEXT)",
-      "INSERT OR REPLACE INTO room_master_table (id,identity_hash) VALUES(42, 'fd7a3656f8ca64529f90f1c721bea436')"
+      "INSERT OR REPLACE INTO room_master_table (id,identity_hash) VALUES(42, '1c3df864ef94dc61ea9e694af6d6fa8f')"
     ]
   }
 }

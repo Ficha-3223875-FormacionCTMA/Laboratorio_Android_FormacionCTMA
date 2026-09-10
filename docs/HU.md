@@ -412,3 +412,39 @@ Documento centralizado de Historias de Usuario (HUs), Criterios de Aceptación, 
 * **TC-56** - Cancelación de Job por ciclo de vida
 * **TC-57** - Consistencia de estado ante rotación de pantalla
 * **TC-58** - Ejecución de suite de pruebas unitarias reactivas
+
+---
+
+## **HU-15 - Sincronización remota de actividades con Retrofit y Caché Local**
+
+**Como** aprendiz de SENA / usuario,  
+**quiero** que mis actividades se sincronicen con un servidor remoto,  
+**para** tener mi información actualizada en múltiples dispositivos y contar con respaldo en la nube.
+
+---
+
+#### **Criterios de Aceptación**
+
+* **CA-01 (200 con actividades):** Al recibir una respuesta exitosa con datos, estos deben guardarse en Room de forma atómica y reflejarse en la lista.
+* **CA-02 (200 vacío):** Una lista vacía remota se considera válida y no debe disparar estados de error.
+* **CA-03 (Timeout con caché):** Si la red falla por tiempo de espera pero hay datos locales, se muestran los locales y un aviso de fallo de actualización.
+* **CA-04 (Sin red y sin caché):** Se debe mostrar un estado recuperable con el mensaje "No hay conexión" y un botón de reintento.
+* **CA-05 (401 No Autorizado):** Si el token es inválido, el sistema debe solicitar renovar la sesión sin exponer credenciales en logs.
+* **CA-06 (500 o JSON inválido):** Errores de servidor o serialización no deben corromper el caché local existente.
+* **CA-07 (Doble refresh rápido):** Peticiones consecutivas deben gestionarse sin corromper la base de datos (concurrencia).
+* **CA-08 (Cancelación):** Si se sale de la pantalla durante la llamada, la petición debe cancelarse sin mostrar errores residuales.
+
+---
+
+#### **Riesgos relacionados**
+* **R-31
+* **R-32
+* **R-33
+
+#### **Casos de prueba relacionados**
+* **TC-59** - Sincronización exitosa y actualización de Room.
+* **TC-60** - Manejo de respuesta vacía válida.
+* **TC-61** - Resiliencia ante timeout con datos locales.
+* **TC-62** - Validación de error 401 y flujo de seguridad.
+* **TC-63** - Integridad de datos ante error 500.
+* **TC-64** - Pruebas de concurrencia en refresco manual.
