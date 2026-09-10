@@ -10,13 +10,13 @@ interface ActividadDao {
     fun getAllActividades(): Flow<List<ActividadEntity>>
 
     @Insert(onConflict = OnConflictStrategy.REPLACE)
-    suspend fun insertActividades(actividades: List<ActividadEntity>)
+    fun insertActividades(actividades: List<ActividadEntity>)
 
     @Query("DELETE FROM actividades")
-    suspend fun clearActividades()
+    fun clearActividades()
 
     @Transaction
-    suspend fun refreshActividades(actividades: List<ActividadEntity>) {
+    fun refreshActividades(actividades: List<ActividadEntity>) {
         clearActividades()
         insertActividades(actividades)
     }
