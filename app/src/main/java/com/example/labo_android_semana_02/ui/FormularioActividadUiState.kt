@@ -11,4 +11,11 @@ data class FormularioActividadUiState(
     val errores: Map<String, String> = emptyMap(),
     val puedeGuardar: Boolean = false,
     val guardando: Boolean = false
-)
+) {
+    /**
+     * HU-19 (CA-19.3): el formulario se considera vacío cuando ninguna de las entradas
+     * de texto tiene contenido. Se usa para deshabilitar el botón "Limpiar".
+     */
+    val estaVacio: Boolean
+        get() = titulo.isBlank() && descripcion.isBlank() && fecha.isBlank()
+}

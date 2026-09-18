@@ -23,25 +23,44 @@ class ReporteViewModel(
     private val _operacionState = MutableStateFlow<OperacionUiState>(OperacionUiState.Ideal)
     val operacionState = _operacionState.asStateFlow()
 
+    /**
+     * HU-21: conjunto de IDs marcados como favoritos. Se mantiene en el ViewModel
+     * (sobrevive a recomposiciones y rotaciones) y se proyecta sobre el listado
+     * antes de emitir el UiState.
+     */
+    private val _favoritos = MutableStateFlow<Set<Int>>(emptySet())
+    val favoritos = _favoritos.asStateFlow()
+
+    private data class EntradaListado(
+        val reportes: List<Reporte>,
+        val orden: String,
+        val query: String,
+        val favoritos: Set<Int>
+    )
+
     val uiState: StateFlow<ListadoUiState> = combine(
         repository.getReportes(),
         preferencias.ordenFiltro,
-        _busqueda
-    ) { reportes, orden, query ->
-        Triple(reportes, orden, query)
-    }.mapLatest { (reportes, orden, query) ->
-        val filtrados = reportes.filter { 
-            it.titulo.contains(query, ignoreCase = true) || 
-            it.descripcion.contains(query, ignoreCase = true)
+        _busqueda,
+        _favoritos
+    ) { reportes, orden, query, favoritos ->
+        EntradaListado(reportes, orden, query, favoritos)
+    }.mapLatest { entrada ->
+        val filtrados = entrada.reportes.filter {
+            it.titulo.contains(entrada.query, ignoreCase = true) ||
+            it.descripcion.contains(entrada.query, ignoreCase = true)
         }
-        
-        val ordenados = when (orden) {
+
+        val ordenados = when (entrada.orden) {
             "FECHA_ASC" -> filtrados.sortedBy { it.fecha }
             else -> filtrados.sortedByDescending { it.fecha }
         }
 
-        if (ordenados.isEmpty()) ListadoUiState.Vacio
-        else ListadoUiState.Contenido(ordenados)
+        // Proyectamos la bandera de favorito sobre cada elemento del listado
+        val conFavoritos = ordenados.map { it.copy(esFavorito = entrada.favoritos.contains(it.id)) }
+
+        if (conFavoritos.isEmpty()) ListadoUiState.Vacio
+        else ListadoUiState.Contenido(conFavoritos)
     }.catch { e ->
         emit(ListadoUiState.Error(e.message ?: "Error desconocido"))
     }.stateIn(
@@ -52,6 +71,16 @@ class ReporteViewModel(
 
     fun onBusquedaChange(query: String) {
         _busqueda.value = query
+    }
+
+    /**
+     * HU-21 (CA-21.2): alterna de forma reactiva la bandera `esFavorito` del reporte.
+     */
+    fun alternarFavorito(reporte: Reporte) {
+        _favoritos.update { actuales ->
+            if (actuales.contains(reporte.id)) actuales - reporte.id
+            else actuales + reporte.id
+        }
     }
 
     fun guardarReporte(reporte: Reporte) {
@@ -72,6 +101,8 @@ class ReporteViewModel(
         viewModelScope.launch {
             try {
                 repository.deleteReporte(reporte)
+                // Si el elemento eliminado estaba destacado, limpiamos su marca
+                _favoritos.update { it - reporte.id }
             } catch (e: CancellationException) {
                 throw e
             } catch (e: Exception) {

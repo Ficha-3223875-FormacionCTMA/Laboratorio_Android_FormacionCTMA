@@ -4,6 +4,7 @@ import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.compose.foundation.background
+import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
@@ -40,6 +41,7 @@ import com.example.labo_android_semana_02.domain.repository.ReporteRepository
 import com.example.labo_android_semana_02.ui.*
 import com.example.labo_android_semana_02.ui.screens.DetalleActividad
 import com.example.labo_android_semana_02.ui.screens.FormularioActividad
+import com.example.labo_android_semana_02.ui.screens.PantallaBienvenida
 import com.example.labo_android_semana_02.ui.screens.PantallaActividades
 import com.example.labo_android_semana_02.ui.screens.PantallaActividadesRemotas
 import com.example.labo_android_semana_02.ui.theme.Labo_android_semana_02Theme
@@ -98,8 +100,19 @@ class MainActivity : ComponentActivity() {
         preferenciasRepository = DataStorePreferenciasRepository(applicationContext)
 
         setContent {
-            Labo_android_semana_02Theme {
-                MainApp(reporteRepository, actividadRepository, preferenciasRepository)
+            // HU-16 (CA-16.3): la preferencia de tema se eleva al nivel más alto de la UI
+            // y se conserva durante toda la sesión, incluso al rotar el dispositivo.
+            val sistemaEnOscuro = isSystemInDarkTheme()
+            var temaOscuro by rememberSaveable { mutableStateOf(sistemaEnOscuro) }
+
+            Labo_android_semana_02Theme(darkTheme = temaOscuro) {
+                MainApp(
+                    reporteRepo = reporteRepository,
+                    actividadRepo = actividadRepository,
+                    preferencias = preferenciasRepository,
+                    temaOscuro = temaOscuro,
+                    onToggleTema = { temaOscuro = it }
+                )
             }
         }
     }
@@ -119,7 +132,9 @@ enum class AgileTab(val title: String) {
 fun MainApp(
     reporteRepo: ReporteRepository,
     actividadRepo: com.example.labo_android_semana_02.domain.repository.ActividadRepository,
-    preferencias: PreferenciasRepository
+    preferencias: PreferenciasRepository,
+    temaOscuro: Boolean = false,
+    onToggleTema: (Boolean) -> Unit = {}
 ) {
     val navController = rememberNavController()
     val viewModel: ReporteViewModel = viewModel(
@@ -141,7 +156,18 @@ fun MainApp(
 
     var reporteAEditar by remember { mutableStateOf<Reporte?>(null) }
 
-    NavHost(navController = navController, startDestination = "activities") {
+    // HU-20 (CA-20.1): la app arranca en la ruta de bienvenida
+    NavHost(navController = navController, startDestination = "welcome") {
+        composable("welcome") {
+            PantallaBienvenida(
+                onIngresar = {
+                    // CA-20.3: al entrar, la bienvenida se retira del back stack
+                    navController.navigate("activities") {
+                        popUpTo("welcome") { inclusive = true }
+                    }
+                }
+            )
+        }
         composable("activities") {
             PantallaPrincipal(
                 uiState = uiState,
@@ -162,7 +188,10 @@ fun MainApp(
                     viewModel.guardarReporte(reporte.copy(resuelto = !reporte.resuelto))
                 },
                 onRetry = { /* Reintento de carga si fuera necesario */ },
-                onRefresh = { syncViewModel.refresh() }
+                onRefresh = { syncViewModel.refresh() },
+                temaOscuro = temaOscuro,
+                onToggleTema = onToggleTema,
+                onToggleFavorito = { viewModel.alternarFavorito(it) }
             )
         }
         composable("activities/form") {
@@ -210,7 +239,10 @@ fun PantallaPrincipal(
     onEdit: (Reporte) -> Unit,
     onToggle: (Reporte) -> Unit,
     onRetry: () -> Unit,
-    onRefresh: () -> Unit
+    onRefresh: () -> Unit,
+    temaOscuro: Boolean = false,
+    onToggleTema: (Boolean) -> Unit = {},
+    onToggleFavorito: (Reporte) -> Unit = {}
 ) {
     var selectedTab by remember { mutableStateOf(AgileTab.ACTIVIDADES) }
 
@@ -255,7 +287,10 @@ fun PantallaPrincipal(
                     onEditReporte = onEdit,
                     onToggleStatus = onToggle,
                     onAddClick = onAddClick,
-                    onRetry = onRetry
+                    onRetry = onRetry,
+                    temaOscuro = temaOscuro,
+                    onToggleTema = onToggleTema,
+                    onToggleFavorito = onToggleFavorito
                 )
                 AgileTab.REMOTO -> PantallaActividadesRemotas(
                     uiState = syncUiState,
@@ -305,6 +340,13 @@ fun FormularioScreen(
         onFechaChange = { fecha = it },
         onPrioridadChange = { /* Prioridad fija para Reportes */ },
         onProgresoChange = { progreso = it },
+        onLimpiar = {
+            // HU-19 (CA-19.2): restablece todas las variables de estado del formulario
+            titulo = ""
+            descripcion = ""
+            fecha = ""
+            progreso = "0"
+        },
         onGuardar = {
             if (uiState.puedeGuardar && !guardando) {
                 val format = SimpleDateFormat("dd/MM/yyyy", Locale.getDefault())
