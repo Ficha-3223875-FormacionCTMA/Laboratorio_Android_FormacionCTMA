@@ -448,3 +448,218 @@ Documento centralizado de Historias de Usuario (HUs), Criterios de Aceptación, 
 * **TC-62** - Validación de error 401 y flujo de seguridad.
 * **TC-63** - Integridad de datos ante error 500.
 * **TC-64** - Pruebas de concurrencia en refresco manual.
+
+---
+
+## **HU-16 - Alternar entre Modo Claro y Modo Oscuro (Tema)**
+
+**Como** usuario,  
+**quiero** cambiar el tema visual de la aplicación mediante un switch,  
+**para** adaptar la interfaz a mis preferencias de iluminación.
+
+---
+
+#### **Criterios de Aceptación**
+
+* **CA-16.1:** Incluir un componente de control/switch (`Switch` o `IconButton`) en la barra superior (`TopAppBar`) o en la vista de ajustes.
+* **CA-16.2:** Cambiar dinámicamente la paleta de colores de la app aprovechando los esquemas de Material 3 (`MaterialTheme.colorScheme`).
+* **CA-16.3:** Recordar y mantener activa la preferencia del tema visual seleccionado durante la sesión actual del usuario.
+
+---
+
+#### **Riesgos relacionados**
+* **R-34**
+* **R-35**
+
+#### **Casos de prueba relacionados**
+* **TC-65** - Presencia y conmutación del switch de cambio de tema
+* **TC-66** - Aplicación correcta de la paleta de colores de Material 3 al alternar tema
+* **TC-67** - Persistencia de la preferencia de tema durante la sesión activa
+
+---
+
+## **HU-17 - Mostrar contador de elementos pendientes vs. completados**
+
+**Como** usuario,  
+**quiero** ver un resumen numérico en la parte superior,  
+**para** saber de un vistazo cuántos registros tengo en total y cuántos he finalizado.
+
+---
+
+#### **Criterios de Aceptación**
+
+* **CA-17.1:** Mostrar una tarjeta o encabezado compacto en la parte superior con dos contadores claros: "Pendientes: X" y "Completados: Y".
+* **CA-17.2:** Recalcular y actualizar automáticamente los contadores en tiempo real al agregar, eliminar o marcar/desmarcar un elemento.
+
+---
+
+#### **Riesgos relacionados**
+* **R-36**
+* **R-37**
+
+#### **Casos de prueba relacionados**
+* **TC-68** - Despliegue inicial de la tarjeta con los contadores numéricos
+* **TC-69** - Recálculo dinámico al marcar o desmarcar elementos como completados
+* **TC-70** - Actualización de contadores tras agregar o eliminar registros
+
+---
+
+## **HU-18 - Confirmar acción antes de eliminar mediante un Diálogo Modal**
+
+**Como** usuario,  
+**quiero** ver un diálogo de confirmación antes de eliminar un registro,  
+**para** evitar borrar información por error.
+
+---
+
+#### **Criterios de Aceptación**
+
+* **CA-18.1:** Al pulsar el botón de eliminar de cualquier registro, desplegar un cuadro de diálogo modal (`AlertDialog`).
+* **CA-18.2:** Incluir en el diálogo el mensaje descriptivo `"¿Estás seguro de eliminar este elemento?"` y los botones de acción `"Cancelar"` y `"Confirmar"`.
+* **CA-18.3:** Remover el registro de la fuente de verdad únicamente si el usuario presiona el botón `"Confirmar"`.
+
+---
+
+#### **Riesgos relacionados**
+* **R-38**
+* **R-39**
+
+#### **Casos de prueba relacionados**
+* **TC-71** - Despliegue del `AlertDialog` al presionar el botón de eliminar
+* **TC-72** - Cancelación de la eliminación y cierre del diálogo al presionar "Cancelar"
+* **TC-73** - Confirmación y remoción efectiva del elemento al presionar "Confirmar"
+
+---
+
+## **HU-19 - Limpiar todos los campos del formulario con un botón**
+
+**Como** usuario,  
+**quiero** un botón de "Limpiar" en el formulario,  
+**para** vaciar todos los campos de texto rápidamente sin borrar carácter por carácter.
+
+---
+
+#### **Criterios de Aceptación**
+
+* **CA-19.1:** Incluir un botón secundario denominado `"Limpiar"` o `"Restablecer"` dentro de la interfaz del formulario.
+* **CA-19.2:** Al pulsar el botón, restablecer de inmediato todas las variables de estado de los campos de texto a sus valores vacíos o por defecto.
+* **CA-19.3:** Desactivar o deshabilitar el botón de limpiar mientras el formulario se encuentre totalmente vacío.
+
+---
+
+#### **Riesgos relacionados**
+* **R-40**
+* **R-41**
+
+#### **Casos de prueba relacionados**
+* **TC-74** - Presencia y estado deshabilitado del botón cuando el formulario está vacío
+* **TC-75** - Habilitación del botón al ingresar caracteres en cualquiera de los campos
+* **TC-76** - Vaciado completo de las entradas de texto al accionar el botón "Limpiar"
+
+---
+
+## **HU-20 - Desplegar pantalla de Bienvenida / Splash Screen básica**
+
+**Como** usuario,  
+**quiero** ver una pantalla inicial de bienvenida al abrir la app,  
+**para** conocer el nombre de la aplicación y acceder al listado principal con un botón.
+
+---
+
+#### **Criterios de Aceptación**
+
+* **CA-20.1:** Crear la ruta de navegación dedicada `welcome` dentro del grafo de la aplicación.
+* **CA-20.2:** Mostrar en la vista el logo/identificador, el nombre de la app y un botón destacado `"Ingresar"` o `"Empezar"`.
+* **CA-20.3:** Al pulsar el botón, navegar al listado principal borrando la pantalla de bienvenida de la pila de navegación (*back stack*).
+
+---
+
+#### **Riesgos relacionados**
+* **R-42**
+* **R-43**
+
+#### **Casos de prueba relacionados**
+* **TC-77** - Carga inicial de la ruta `welcome` con los elementos de marca
+* **TC-78** - Navegación fluida hacia el listado principal al presionar "Ingresar"
+* **TC-79** - Verificación de remoción de la pantalla de bienvenida del *back stack* al presionar el botón atrás
+
+---
+
+## **HU-21 - Marcar elementos como "Favoritos" o destacados**
+
+**Como** usuario,  
+**quiero** presionar un icono de estrella en un elemento,  
+**para** marcarlo como favorito y distinguirlo visualmente de los demás.
+
+---
+
+#### **Criterios de Aceptación**
+
+* **CA-21.1:** Incluir un componente `IconButton` con forma de estrella (`Icons.Default.Star` / `StarBorder`) en la tarjeta de cada registro.
+* **CA-21.2:** Alternar reactivamente el estado booleano `esFavorito` del objeto al hacer clic sobre la estrella.
+* **CA-21.3:** Destacar visualmente la estrella cambiando su color a amarillo/dorado cuando el elemento esté marcado como favorito.
+
+---
+
+#### **Riesgos relacionados**
+* **R-44**
+* **R-45**
+
+#### **Casos de prueba relacionados**
+* **TC-80** - Presencia y estado visual inicial del icono de estrella en las tarjetas
+* **TC-81** - Cambio de estado de la bandera `esFavorito` y actualización de color al pulsar
+* **TC-82** - Persistencia del estado de favorito en el `UiState` tras la recomposición
+
+---
+
+## **HU-22 - Copiar información al portapapeles con un clic**
+
+**Como** usuario,  
+**quiero** un botón para copiar el detalle o ID de un registro,  
+**para** compartirlo o pegarlo fácilmente en otras aplicaciones.
+
+---
+
+#### **Criterios de Aceptación**
+
+* **CA-22.1:** Incluir un botón o icono de `"Copiar"` (`Icons.Default.ContentCopy`) en la tarjeta o pantalla de detalle del registro.
+* **CA-22.2:** Al hacer clic, enviar la información formateada (ID, Título) al portapapeles utilizando el `ClipboardManager` de Android.
+* **CA-22.3:** Notificar al usuario mediante un mensaje flotante corto (`Toast` o `Snackbar`) con la confirmación `"Copiado al portapapeles"`.
+
+---
+
+#### **Riesgos relacionados**
+* **R-46**
+* **R-47**
+
+#### **Casos de prueba relacionados**
+* **TC-83** - Presencia del botón de copia en la tarjeta o detalle del registro
+* **TC-84** - Verificación de almacenamiento del texto en el `ClipboardManager` de Android
+* **TC-85** - Despliegue del mensaje `Toast`/`Snackbar` tras la confirmación de copia
+
+---
+
+## **HU-23 - Ejecutar prueba de integración de fin a fin y verificación de salud del sistema**
+
+**Como** desarrollador / evaluador,  
+**quiero** ejecutar un flujo completo de uso principal (crear, listar, editar, completar y eliminar),  
+**para** verificar que el software funcione de manera integrada, compile sin errores y no presente fallos críticos.
+
+---
+
+#### **Criterios de Aceptación**
+
+* **CA-23.1:** Comprobar que la aplicación compila de forma limpia en el entorno de desarrollo (`Gradle Build Successful`) sin errores ni advertencias fatales.
+* **CA-23.2:** Ejecutar de forma continua la secuencia de uso principal (Creación -> Lectura en lista -> Edición -> Cambio de estado a completado -> Eliminación) confirmando que todos los componentes responden correctamente.
+* **CA-23.3:** Confirmar que la aplicación no presente cierres inesperados (*crashes*), fugas de memoria evidentes ni congelamientos de la interfaz (*ANR*) durante la prueba integral.
+
+---
+
+#### **Riesgos relacionados**
+* **R-48**
+* **R-49**
+
+#### **Casos de prueba relacionados**
+* **TC-86** - Verificación de compilación limpia y estado de construcción del proyecto
+* **TC-87** - Ejecución del flujo integral E2E (Crear, Editar, Completar y Eliminar)
+* **TC-88** - Auditoría de estabilidad y ausencia de cierres inesperados (*crashes*)

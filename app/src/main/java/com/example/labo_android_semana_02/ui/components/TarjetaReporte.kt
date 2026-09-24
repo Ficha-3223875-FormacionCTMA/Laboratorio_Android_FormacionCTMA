@@ -4,6 +4,12 @@ import androidx.compose.animation.animateContentSize
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.ContentCopy
+import androidx.compose.material.icons.filled.Delete
+import androidx.compose.material.icons.filled.Edit
+import androidx.compose.material.icons.filled.Star
+import androidx.compose.material.icons.filled.StarBorder
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -18,6 +24,9 @@ import com.example.labo_android_semana_02.domain.Reporte
 import java.text.SimpleDateFormat
 import java.util.*
 
+/** HU-21 (CA-21.3): color de realce para el icono de favorito. */
+private val ColorFavorito = Color(0xFFFFC107)
+
 @Composable
 fun TarjetaReporte(
     reporte: Reporte,
@@ -25,6 +34,8 @@ fun TarjetaReporte(
     onDelete: (Reporte) -> Unit,
     onEdit: (Reporte) -> Unit,
     onToggleStatus: (Reporte) -> Unit,
+    onToggleFavorito: (Reporte) -> Unit = {},
+    onCopiar: (Reporte) -> Unit = {},
     modifier: Modifier = Modifier
 ) {
     val hoy = System.currentTimeMillis()
@@ -91,7 +102,7 @@ fun TarjetaReporte(
                     overflow = if (expandida) TextOverflow.Clip else TextOverflow.Ellipsis,
                     modifier = Modifier.padding(start = 48.dp)
                 )
-                
+
                 if (expandida) {
                     Spacer(modifier = Modifier.height(8.dp))
                     Text(
@@ -118,11 +129,62 @@ fun TarjetaReporte(
                     color = colorIndicador
                 )
                 Row {
-                    TextButton(onClick = { onEdit(reporte) }, modifier = Modifier.sizeIn(minWidth = 32.dp)) {
-                        Text("E", fontWeight = FontWeight.Bold)
+                    // HU-21: marcar / desmarcar como favorito
+                    IconButton(
+                        onClick = { onToggleFavorito(reporte) },
+                        modifier = Modifier.size(32.dp).semantics {
+                            contentDescription = if (reporte.esFavorito) "Quitar de favoritos" else "Marcar como favorito"
+                        }
+                    ) {
+                        Icon(
+                            imageVector = if (reporte.esFavorito) Icons.Default.Star else Icons.Default.StarBorder,
+                            contentDescription = null,
+                            tint = if (reporte.esFavorito) ColorFavorito else MaterialTheme.colorScheme.outline,
+                            modifier = Modifier.size(18.dp)
+                        )
                     }
-                    TextButton(onClick = { onDelete(reporte) }, modifier = Modifier.sizeIn(minWidth = 32.dp)) {
-                        Text("X", fontWeight = FontWeight.ExtraBold, color = MaterialTheme.colorScheme.error)
+
+                    // HU-22: copiar la información del reporte al portapapeles
+                    IconButton(
+                        onClick = { onCopiar(reporte) },
+                        modifier = Modifier.size(32.dp).semantics {
+                            contentDescription = "Copiar información del reporte"
+                        }
+                    ) {
+                        Icon(
+                            imageVector = Icons.Default.ContentCopy,
+                            contentDescription = null,
+                            tint = MaterialTheme.colorScheme.primary,
+                            modifier = Modifier.size(18.dp)
+                        )
+                    }
+
+                    IconButton(
+                        onClick = { onEdit(reporte) },
+                        modifier = Modifier.size(32.dp).semantics {
+                            contentDescription = "Editar reporte"
+                        }
+                    ) {
+                        Icon(
+                            imageVector = Icons.Default.Edit,
+                            contentDescription = null,
+                            tint = MaterialTheme.colorScheme.primary,
+                            modifier = Modifier.size(18.dp)
+                        )
+                    }
+
+                    IconButton(
+                        onClick = { onDelete(reporte) },
+                        modifier = Modifier.size(32.dp).semantics {
+                            contentDescription = "Eliminar reporte"
+                        }
+                    ) {
+                        Icon(
+                            imageVector = Icons.Default.Delete,
+                            contentDescription = null,
+                            tint = MaterialTheme.colorScheme.error,
+                            modifier = Modifier.size(18.dp)
+                        )
                     }
                 }
             }

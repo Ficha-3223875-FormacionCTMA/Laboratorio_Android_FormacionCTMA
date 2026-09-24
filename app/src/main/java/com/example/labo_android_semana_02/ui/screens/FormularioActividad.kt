@@ -6,6 +6,8 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.example.labo_android_semana_02.domain.Prioridad
@@ -22,6 +24,7 @@ fun FormularioActividad(
     onProgresoChange: (String) -> Unit,
     onGuardar: () -> Unit,
     onBack: () -> Unit,
+    onLimpiar: () -> Unit = {},
     modifier: Modifier = Modifier
 ) {
     Scaffold(
@@ -104,6 +107,18 @@ fun FormularioActividad(
                 } else {
                     Text("Guardar Actividad")
                 }
+            }
+
+            // HU-19 (CA-19.1 y CA-19.3): botón secundario para vaciar el formulario.
+            // Permanece deshabilitado mientras todas las entradas de texto estén vacías.
+            OutlinedButton(
+                onClick = onLimpiar,
+                enabled = !uiState.estaVacio && !uiState.guardando,
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .semantics { contentDescription = "Limpiar formulario" }
+            ) {
+                Text("Limpiar")
             }
         }
     }
