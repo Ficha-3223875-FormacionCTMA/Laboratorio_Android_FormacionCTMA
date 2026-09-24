@@ -1,5 +1,6 @@
 package com.example.labo_android_semana_02.ui.screens
 
+import android.view.HapticFeedbackConstants
 import android.widget.Toast
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
@@ -14,8 +15,11 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.hapticfeedback.HapticFeedbackType
 import androidx.compose.ui.platform.LocalClipboardManager
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalHapticFeedback
+import androidx.compose.ui.platform.LocalView
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.AnnotatedString
@@ -43,6 +47,13 @@ fun PantallaActividades(
     onToggleTema: (Boolean) -> Unit = {},
     onToggleFavorito: (Reporte) -> Unit = {}
 ) {
+    val haptic = LocalHapticFeedback.current
+    val view = LocalView.current
+    val triggerHaptic = {
+        haptic.performHapticFeedback(HapticFeedbackType.LongPress)
+        view.performHapticFeedback(HapticFeedbackConstants.CONTEXT_CLICK)
+    }
+
     // HU-18: reporte pendiente de confirmación de borrado (null = diálogo cerrado)
     var reporteAEliminar by remember { mutableStateOf<Reporte?>(null) }
 
@@ -76,7 +87,10 @@ fun PantallaActividades(
                         )
                         Switch(
                             checked = temaOscuro,
-                            onCheckedChange = onToggleTema,
+                            onCheckedChange = {
+                                triggerHaptic()
+                                onToggleTema(it)
+                            },
                             modifier = Modifier
                                 .padding(horizontal = 8.dp)
                                 .semantics { contentDescription = "Cambiar tema de la aplicación" }
@@ -94,7 +108,10 @@ fun PantallaActividades(
         },
         floatingActionButton = {
             FloatingActionButton(
-                onClick = onAddClick,
+                onClick = {
+                    triggerHaptic()
+                    onAddClick()
+                },
                 containerColor = MaterialTheme.colorScheme.primary,
                 contentColor = MaterialTheme.colorScheme.onPrimary
             ) {
@@ -186,11 +203,15 @@ fun PantallaActividades(
     // HU-18 (CA-18.1 y CA-18.2): diálogo modal de confirmación de borrado
     reporteAEliminar?.let { reporte ->
         AlertDialog(
-            onDismissRequest = { reporteAEliminar = null },
+            onDismissRequest = {
+                triggerHaptic()
+                reporteAEliminar = null
+            },
             title = { Text("Confirmar eliminación") },
             text = { Text("¿Estás seguro de eliminar este elemento?") },
             confirmButton = {
                 TextButton(onClick = {
+                    triggerHaptic()
                     // CA-18.3: solo aquí se remueve el registro de la fuente de verdad
                     onDeleteReporte(reporte)
                     reporteAEliminar = null
@@ -199,7 +220,10 @@ fun PantallaActividades(
                 }
             },
             dismissButton = {
-                TextButton(onClick = { reporteAEliminar = null }) {
+                TextButton(onClick = {
+                    triggerHaptic()
+                    reporteAEliminar = null
+                }) {
                     Text("Cancelar")
                 }
             }
@@ -277,11 +301,17 @@ fun EstadoInformativo(
     accionTexto: String,
     onAccion: () -> Unit
 ) {
+    val haptic = LocalHapticFeedback.current
+    val view = LocalView.current
     Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
         Column(horizontalAlignment = Alignment.CenterHorizontally, modifier = Modifier.padding(24.dp)) {
             Text(text = mensaje, style = MaterialTheme.typography.bodyLarge, color = MaterialTheme.colorScheme.onSurfaceVariant)
             Spacer(modifier = Modifier.height(16.dp))
-            Button(onClick = onAccion) { Text(accionTexto) }
+            Button(onClick = {
+                haptic.performHapticFeedback(HapticFeedbackType.LongPress)
+                view.performHapticFeedback(HapticFeedbackConstants.CONTEXT_CLICK)
+                onAccion()
+            }) { Text(accionTexto) }
         }
     }
 }

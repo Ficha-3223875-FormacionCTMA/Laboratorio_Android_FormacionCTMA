@@ -14,8 +14,27 @@ fun CategoriaEntity.toDomain() = Categoria(id, nombre, icono)
 fun Categoria.toEntity() = CategoriaEntity(id, nombre, icono)
 
 // Reporte Mappers
-fun ReporteEntity.toDomain() = Reporte(id, titulo, descripcion, fecha, categoriaId, resuelto)
-fun Reporte.toEntity() = ReporteEntity(id, titulo, descripcion, fecha, categoriaId, resuelto)
+fun ReporteEntity.toDomain() = Reporte(
+    id = id,
+    titulo = titulo,
+    descripcion = descripcion,
+    fecha = fecha,
+    categoriaId = categoriaId,
+    resuelto = resuelto,
+    evidenciaFotoUri = evidenciaFotoUri,
+    evidenciaArchivoUri = evidenciaArchivoUri
+)
+
+fun Reporte.toEntity() = ReporteEntity(
+    id = id,
+    titulo = titulo,
+    descripcion = descripcion,
+    fecha = fecha,
+    categoriaId = categoriaId,
+    resuelto = resuelto,
+    evidenciaFotoUri = evidenciaFotoUri,
+    evidenciaArchivoUri = evidenciaArchivoUri
+)
 
 // Actividad Mappers
 fun ActividadEntity.toDomain() = ActividadFormativa(
@@ -24,7 +43,9 @@ fun ActividadEntity.toDomain() = ActividadFormativa(
     descripcion = descripcion,
     progreso = progreso,
     fechaEntrega = fechaEntrega,
-    prioridad = prioridad
+    prioridad = prioridad,
+    evidenciaFotoUri = evidenciaFotoUri,
+    evidenciaArchivoUri = evidenciaArchivoUri
 )
 
 fun ActividadFormativa.toEntity() = ActividadEntity(
@@ -34,7 +55,9 @@ fun ActividadFormativa.toEntity() = ActividadEntity(
     progreso = progreso,
     fechaEntrega = fechaEntrega,
     prioridad = prioridad,
-    resuelto = progreso == 100
+    resuelto = progreso == 100,
+    evidenciaFotoUri = evidenciaFotoUri,
+    evidenciaArchivoUri = evidenciaArchivoUri
 )
 
 fun ActividadDto.toEntity() = ActividadEntity(

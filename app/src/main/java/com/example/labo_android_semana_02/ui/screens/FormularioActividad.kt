@@ -1,11 +1,15 @@
 package com.example.labo_android_semana_02.ui.screens
 
+import android.view.HapticFeedbackConstants
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.hapticfeedback.HapticFeedbackType
+import androidx.compose.ui.platform.LocalHapticFeedback
+import androidx.compose.ui.platform.LocalView
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.font.FontWeight
@@ -22,17 +26,30 @@ fun FormularioActividad(
     onFechaChange: (String) -> Unit,
     onPrioridadChange: (Prioridad) -> Unit,
     onProgresoChange: (String) -> Unit,
+    onTomarFoto: () -> Unit,
+    onSubirFoto: () -> Unit,
+    onSubirArchivo: () -> Unit,
     onGuardar: () -> Unit,
     onBack: () -> Unit,
     onLimpiar: () -> Unit = {},
     modifier: Modifier = Modifier
 ) {
+    val haptic = LocalHapticFeedback.current
+    val view = LocalView.current
+    val triggerHaptic = {
+        haptic.performHapticFeedback(HapticFeedbackType.LongPress)
+        view.performHapticFeedback(HapticFeedbackConstants.CONTEXT_CLICK)
+    }
+
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { Text("Formulario de Actividad") },
+                title = { Text("Formulario de Actividad con Evidencias") },
                 navigationIcon = {
-                    TextButton(onClick = onBack) {
+                    TextButton(onClick = {
+                        triggerHaptic()
+                        onBack()
+                    }) {
                         Text("< Volver")
                     }
                 }
@@ -80,7 +97,10 @@ fun FormularioActividad(
                 Prioridad.entries.forEach { p ->
                     FilterChip(
                         selected = uiState.prioridad == p,
-                        onClick = { onPrioridadChange(p) },
+                        onClick = {
+                            triggerHaptic()
+                            onPrioridadChange(p)
+                        },
                         label = { Text(p.name) }
                     )
                 }
@@ -95,10 +115,78 @@ fun FormularioActividad(
                 modifier = Modifier.fillMaxWidth()
             )
 
+            // Sección de Evidencias (Fotos y Archivos)
+            Card(
+                modifier = Modifier.fillMaxWidth(),
+                colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant)
+            ) {
+                Column(
+                    modifier = Modifier.padding(16.dp),
+                    verticalArrangement = Arrangement.spacedBy(12.dp)
+                ) {
+                    Text("Evidencia (Fotos y Archivos)", fontWeight = FontWeight.Bold, style = MaterialTheme.typography.titleSmall)
+                    
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.spacedBy(8.dp)
+                    ) {
+                        Button(
+                            onClick = {
+                                triggerHaptic()
+                                onTomarFoto()
+                            },
+                            modifier = Modifier.weight(1f)
+                        ) {
+                            Text("Tomar Foto", style = MaterialTheme.typography.labelMedium)
+                        }
+                        Button(
+                            onClick = {
+                                triggerHaptic()
+                                onSubirFoto()
+                            },
+                            modifier = Modifier.weight(1f)
+                        ) {
+                            Text("Subir Imagen", style = MaterialTheme.typography.labelMedium)
+                        }
+                    }
+
+                    OutlinedButton(
+                        onClick = {
+                            triggerHaptic()
+                            onSubirArchivo()
+                        },
+                        modifier = Modifier.fillMaxWidth()
+                    ) {
+                        Text("Subir Archivo de Evidencia", style = MaterialTheme.typography.labelMedium)
+                    }
+
+                    val foto = uiState.evidenciaFotoUri
+                    if (!foto.isNullOrBlank()) {
+                        Text(
+                            text = "Foto adjunta: ${foto.takeLast(30)}",
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.primary
+                        )
+                    }
+
+                    val archivo = uiState.evidenciaArchivoUri
+                    if (!archivo.isNullOrBlank()) {
+                        Text(
+                            text = "Archivo adjunto: ${archivo.takeLast(30)}",
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.primary
+                        )
+                    }
+                }
+            }
+
             Spacer(modifier = Modifier.weight(1f))
 
             Button(
-                onClick = onGuardar,
+                onClick = {
+                    triggerHaptic()
+                    onGuardar()
+                },
                 enabled = uiState.puedeGuardar && !uiState.guardando,
                 modifier = Modifier.fillMaxWidth()
             ) {
@@ -109,10 +197,11 @@ fun FormularioActividad(
                 }
             }
 
-            // HU-19 (CA-19.1 y CA-19.3): botón secundario para vaciar el formulario.
-            // Permanece deshabilitado mientras todas las entradas de texto estén vacías.
             OutlinedButton(
-                onClick = onLimpiar,
+                onClick = {
+                    triggerHaptic()
+                    onLimpiar()
+                },
                 enabled = !uiState.estaVacio && !uiState.guardando,
                 modifier = Modifier
                     .fillMaxWidth()

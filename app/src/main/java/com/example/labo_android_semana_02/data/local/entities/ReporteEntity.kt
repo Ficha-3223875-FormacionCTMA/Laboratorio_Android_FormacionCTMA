@@ -25,5 +25,7 @@ data class ReporteEntity(
     @ColumnInfo(index = true)
     val categoriaId: Int,
     @ColumnInfo(defaultValue = "0")
-    val resuelto: Boolean = false
+    val resuelto: Boolean = false,
+    val evidenciaFotoUri: String? = null,
+    val evidenciaArchivoUri: String? = null
 )

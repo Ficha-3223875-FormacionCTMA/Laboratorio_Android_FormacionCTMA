@@ -13,5 +13,7 @@ data class ActividadEntity(
     val progreso: Int,
     val fechaEntrega: Long,
     val prioridad: Prioridad,
-    val resuelto: Boolean = false
+    val resuelto: Boolean = false,
+    val evidenciaFotoUri: String? = null,
+    val evidenciaArchivoUri: String? = null
 )

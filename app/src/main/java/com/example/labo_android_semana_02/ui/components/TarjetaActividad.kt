@@ -1,5 +1,6 @@
 package com.example.labo_android_semana_02.ui.components
 
+import android.view.HapticFeedbackConstants
 import androidx.compose.animation.animateContentSize
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
@@ -9,6 +10,9 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.hapticfeedback.HapticFeedbackType
+import androidx.compose.ui.platform.LocalHapticFeedback
+import androidx.compose.ui.platform.LocalView
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.font.FontWeight
@@ -29,6 +33,13 @@ fun TarjetaActividad(
     onToggleStatus: (ActividadFormativa) -> Unit,
     modifier: Modifier = Modifier
 ) {
+    val haptic = LocalHapticFeedback.current
+    val view = LocalView.current
+    val triggerHaptic = {
+        haptic.performHapticFeedback(HapticFeedbackType.LongPress)
+        view.performHapticFeedback(HapticFeedbackConstants.CONTEXT_CLICK)
+    }
+
     val hoy = Calendar.getInstance().timeInMillis
     val diferenciaMillis = actividad.fechaEntrega - hoy
     val diasRestantes = (diferenciaMillis / (24 * 60 * 60 * 1000L)).toInt()
@@ -53,6 +64,7 @@ fun TarjetaActividad(
             .fillMaxWidth()
             .animateContentSize()
             .clickable { 
+                triggerHaptic()
                 expandida = !expandida
                 onClick(actividad) 
             }
@@ -83,7 +95,10 @@ fun TarjetaActividad(
                 Row(verticalAlignment = Alignment.CenterVertically) {
                     Checkbox(
                         checked = esTerminada,
-                        onCheckedChange = { onToggleStatus(actividad) },
+                        onCheckedChange = {
+                            triggerHaptic()
+                            onToggleStatus(actividad)
+                        },
                         colors = CheckboxDefaults.colors(checkedColor = Color(0xFF00BFA5))
                     )
                     Text(
@@ -135,7 +150,10 @@ fun TarjetaActividad(
                 )
                 Row {
                     TextButton(
-                        onClick = { onEdit(actividad) },
+                        onClick = {
+                            triggerHaptic()
+                            onEdit(actividad)
+                        },
                         colors = ButtonDefaults.textButtonColors(contentColor = MaterialTheme.colorScheme.primary),
                         contentPadding = PaddingValues(0.dp),
                         modifier = Modifier.sizeIn(minWidth = 32.dp)
@@ -143,7 +161,10 @@ fun TarjetaActividad(
                         Text("E", fontWeight = FontWeight.Bold)
                     }
                     TextButton(
-                        onClick = { onDelete(actividad) },
+                        onClick = {
+                            triggerHaptic()
+                            onDelete(actividad)
+                        },
                         colors = ButtonDefaults.textButtonColors(contentColor = MaterialTheme.colorScheme.error),
                         contentPadding = PaddingValues(0.dp),
                         modifier = Modifier.sizeIn(minWidth = 32.dp)

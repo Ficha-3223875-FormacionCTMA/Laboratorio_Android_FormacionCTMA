@@ -1,5 +1,6 @@
 package com.example.labo_android_semana_02.ui.components
 
+import android.view.HapticFeedbackConstants
 import androidx.compose.animation.animateContentSize
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
@@ -15,6 +16,9 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.hapticfeedback.HapticFeedbackType
+import androidx.compose.ui.platform.LocalHapticFeedback
+import androidx.compose.ui.platform.LocalView
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.font.FontWeight
@@ -38,6 +42,13 @@ fun TarjetaReporte(
     onCopiar: (Reporte) -> Unit = {},
     modifier: Modifier = Modifier
 ) {
+    val haptic = LocalHapticFeedback.current
+    val view = LocalView.current
+    val triggerHaptic = {
+        haptic.performHapticFeedback(HapticFeedbackType.LongPress)
+        view.performHapticFeedback(HapticFeedbackConstants.CONTEXT_CLICK)
+    }
+
     val hoy = System.currentTimeMillis()
     val diferenciaMillis = reporte.fecha - hoy
     val diasRestantes = (diferenciaMillis / (24 * 60 * 60 * 1000L)).toInt()
@@ -58,7 +69,11 @@ fun TarjetaReporte(
         modifier = modifier
             .fillMaxWidth()
             .animateContentSize()
-            .clickable { expandida = !expandida; onClick(reporte) }
+            .clickable {
+                triggerHaptic()
+                expandida = !expandida
+                onClick(reporte)
+            }
             .semantics {
                 contentDescription = "Reporte: ${reporte.titulo}, ${if(reporte.resuelto) "Resuelto" else "Faltan $diasRestantes días"}"
             },
@@ -83,7 +98,10 @@ fun TarjetaReporte(
                 Row(verticalAlignment = Alignment.CenterVertically) {
                     Checkbox(
                         checked = reporte.resuelto,
-                        onCheckedChange = { onToggleStatus(reporte) },
+                        onCheckedChange = {
+                            triggerHaptic()
+                            onToggleStatus(reporte)
+                        },
                         colors = CheckboxDefaults.colors(checkedColor = Color(0xFF00BFA5))
                     )
                     Text(
@@ -129,9 +147,11 @@ fun TarjetaReporte(
                     color = colorIndicador
                 )
                 Row {
-                    // HU-21: marcar / desmarcar como favorito
                     IconButton(
-                        onClick = { onToggleFavorito(reporte) },
+                        onClick = {
+                            triggerHaptic()
+                            onToggleFavorito(reporte)
+                        },
                         modifier = Modifier.size(32.dp).semantics {
                             contentDescription = if (reporte.esFavorito) "Quitar de favoritos" else "Marcar como favorito"
                         }
@@ -144,9 +164,11 @@ fun TarjetaReporte(
                         )
                     }
 
-                    // HU-22: copiar la información del reporte al portapapeles
                     IconButton(
-                        onClick = { onCopiar(reporte) },
+                        onClick = {
+                            triggerHaptic()
+                            onCopiar(reporte)
+                        },
                         modifier = Modifier.size(32.dp).semantics {
                             contentDescription = "Copiar información del reporte"
                         }
@@ -160,7 +182,10 @@ fun TarjetaReporte(
                     }
 
                     IconButton(
-                        onClick = { onEdit(reporte) },
+                        onClick = {
+                            triggerHaptic()
+                            onEdit(reporte)
+                        },
                         modifier = Modifier.size(32.dp).semantics {
                             contentDescription = "Editar reporte"
                         }
@@ -174,7 +199,10 @@ fun TarjetaReporte(
                     }
 
                     IconButton(
-                        onClick = { onDelete(reporte) },
+                        onClick = {
+                            triggerHaptic()
+                            onDelete(reporte)
+                        },
                         modifier = Modifier.size(32.dp).semantics {
                             contentDescription = "Eliminar reporte"
                         }
