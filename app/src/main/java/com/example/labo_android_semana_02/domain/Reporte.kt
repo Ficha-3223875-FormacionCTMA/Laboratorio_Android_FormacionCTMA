@@ -9,5 +9,7 @@ data class Reporte(
     val resuelto: Boolean = false, // Nuevo campo para v2
     // HU-21: bandera de "destacado". Vive únicamente en el UiState (no se persiste en Room),
     // por eso se declara con valor por defecto y los mappers no la tocan.
-    val esFavorito: Boolean = false
+    val esFavorito: Boolean = false,
+    val evidenciaFotoUri: String? = null,
+    val evidenciaArchivoUri: String? = null
 )

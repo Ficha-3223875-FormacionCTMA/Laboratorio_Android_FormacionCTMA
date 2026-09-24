@@ -1,8 +1,13 @@
 package com.example.labo_android_semana_02
 
 import android.os.Bundle
+import android.graphics.Bitmap
+import android.net.Uri
+import android.view.HapticFeedbackConstants
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.background
 import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.*
@@ -17,9 +22,15 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.hapticfeedback.HapticFeedbackType
+import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalHapticFeedback
+import androidx.compose.ui.platform.LocalView
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
+import java.io.File
+import java.io.FileOutputStream
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewmodel.compose.viewModel
@@ -69,7 +80,8 @@ class MainActivity : ComponentActivity() {
         
         // Base de Datos
         db = Room.databaseBuilder(applicationContext, AppDatabase::class.java, "reportes_db")
-            .addMigrations(AppDatabase.MIGRATION_1_2)
+            .addMigrations(AppDatabase.MIGRATION_1_2, AppDatabase.MIGRATION_3_4)
+            .fallbackToDestructiveMigration()
             .build()
         
         // Red (Retrofit + OkHttp)
@@ -244,6 +256,8 @@ fun PantallaPrincipal(
     onToggleTema: (Boolean) -> Unit = {},
     onToggleFavorito: (Reporte) -> Unit = {}
 ) {
+    val haptic = LocalHapticFeedback.current
+    val view = LocalView.current
     var selectedTab by remember { mutableStateOf(AgileTab.ACTIVIDADES) }
 
     Scaffold(
@@ -255,7 +269,11 @@ fun PantallaPrincipal(
                 AgileTab.entries.forEach { tab ->
                     NavigationBarItem(
                         selected = selectedTab == tab,
-                        onClick = { selectedTab = tab },
+                        onClick = {
+                            haptic.performHapticFeedback(HapticFeedbackType.LongPress)
+                            view.performHapticFeedback(HapticFeedbackConstants.CONTEXT_CLICK)
+                            selectedTab = tab
+                        },
                         icon = { 
                             Box(
                                 modifier = Modifier
@@ -313,7 +331,8 @@ fun FormularioScreen(
     onExito: () -> Unit,
     onBack: () -> Unit
 ) {
-    // Elevación de estado para el borrador
+    val context = LocalContext.current
+    // Elevación de estado para el borrador y evidencias
     var titulo by rememberSaveable { mutableStateOf(reporteAEditar?.titulo ?: "") }
     var descripcion by rememberSaveable { mutableStateOf(reporteAEditar?.descripcion ?: "") }
     
@@ -322,6 +341,30 @@ fun FormularioScreen(
     
     var fecha by rememberSaveable { mutableStateOf(fechaInicial) }
     var progreso by rememberSaveable { mutableStateOf(if(reporteAEditar?.resuelto == true) "100" else "0") }
+    var evidenciaFotoUri by rememberSaveable { mutableStateOf(reporteAEditar?.evidenciaFotoUri) }
+    var evidenciaArchivoUri by rememberSaveable { mutableStateOf(reporteAEditar?.evidenciaArchivoUri) }
+
+    val cameraLauncher = rememberLauncherForActivityResult(ActivityResultContracts.TakePicturePreview()) { bitmap ->
+        if (bitmap != null) {
+            val file = File(context.filesDir, "evidencia_foto_${System.currentTimeMillis()}.jpg")
+            try {
+                FileOutputStream(file).use { out ->
+                    bitmap.compress(Bitmap.CompressFormat.JPEG, 90, out)
+                }
+                evidenciaFotoUri = file.absolutePath
+            } catch (e: Exception) {
+                e.printStackTrace()
+            }
+        }
+    }
+
+    val imagePickerLauncher = rememberLauncherForActivityResult(ActivityResultContracts.GetContent()) { uri: Uri? ->
+        uri?.let { evidenciaFotoUri = it.toString() }
+    }
+
+    val filePickerLauncher = rememberLauncherForActivityResult(ActivityResultContracts.GetContent()) { uri: Uri? ->
+        uri?.let { evidenciaArchivoUri = it.toString() }
+    }
 
     val guardando = operacionState is OperacionUiState.Cargando
     
@@ -331,7 +374,7 @@ fun FormularioScreen(
         }
     }
 
-    val uiState = buildUiState(titulo, descripcion, fecha, Prioridad.MEDIA, progreso, guardando)
+    val uiState = buildUiState(titulo, descripcion, fecha, Prioridad.MEDIA, progreso, guardando, evidenciaFotoUri, evidenciaArchivoUri)
 
     FormularioActividad(
         uiState = uiState,
@@ -340,12 +383,16 @@ fun FormularioScreen(
         onFechaChange = { fecha = it },
         onPrioridadChange = { /* Prioridad fija para Reportes */ },
         onProgresoChange = { progreso = it },
+        onTomarFoto = { cameraLauncher.launch(null) },
+        onSubirFoto = { imagePickerLauncher.launch("image/*") },
+        onSubirArchivo = { filePickerLauncher.launch("*/*") },
         onLimpiar = {
-            // HU-19 (CA-19.2): restablece todas las variables de estado del formulario
             titulo = ""
             descripcion = ""
             fecha = ""
             progreso = "0"
+            evidenciaFotoUri = null
+            evidenciaArchivoUri = null
         },
         onGuardar = {
             if (uiState.puedeGuardar && !guardando) {
@@ -361,8 +408,10 @@ fun FormularioScreen(
                     titulo = titulo,
                     descripcion = descripcion,
                     fecha = fechaLong,
-                    categoriaId = 1, // Por defecto
-                    resuelto = progreso == "100"
+                    categoriaId = 1,
+                    resuelto = progreso == "100",
+                    evidenciaFotoUri = evidenciaFotoUri,
+                    evidenciaArchivoUri = evidenciaArchivoUri
                 )
                 onGuardar(reporte)
             }
@@ -376,9 +425,15 @@ fun DetalleReporteContent(
     reporte: Reporte?,
     onBack: () -> Unit
 ) {
+    val haptic = LocalHapticFeedback.current
+    val view = LocalView.current
     Scaffold(
         topBar = {
-            TextButton(onClick = onBack) { Text("< Volver") }
+            TextButton(onClick = {
+                haptic.performHapticFeedback(HapticFeedbackType.LongPress)
+                view.performHapticFeedback(HapticFeedbackConstants.CONTEXT_CLICK)
+                onBack()
+            }) { Text("< Volver") }
         }
     ) { p ->
         if (reporte == null) {
@@ -386,12 +441,19 @@ fun DetalleReporteContent(
                 Text("Reporte no encontrado")
             }
         } else {
-            Column(Modifier.padding(p).padding(16.dp)) {
+            Column(Modifier.padding(p).padding(16.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
                 Text(reporte.titulo, style = MaterialTheme.typography.headlineMedium, fontWeight = FontWeight.Bold)
-                Spacer(Modifier.height(8.dp))
                 Text(reporte.descripcion)
-                Spacer(Modifier.height(16.dp))
-                Text("Estado: ${if(reporte.resuelto) "Resuelto" else "Pendiente"}")
+                Text("Estado: ${if(reporte.resuelto) "Resuelto" else "Pendiente"}", fontWeight = FontWeight.Bold)
+
+                if (!reporte.evidenciaFotoUri.isNullOrBlank()) {
+                    Text("Evidencia Fotográfica:", fontWeight = FontWeight.Bold)
+                    Text(reporte.evidenciaFotoUri, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.primary)
+                }
+                if (!reporte.evidenciaArchivoUri.isNullOrBlank()) {
+                    Text("Evidencia de Archivo:", fontWeight = FontWeight.Bold)
+                    Text(reporte.evidenciaArchivoUri, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.primary)
+                }
             }
         }
     }
@@ -406,7 +468,9 @@ fun buildUiState(
     fecha: String,
     prioridad: Prioridad,
     progreso: String,
-    guardando: Boolean
+    guardando: Boolean,
+    evidenciaFotoUri: String? = null,
+    evidenciaArchivoUri: String? = null
 ): FormularioActividadUiState {
     val errores = mutableMapOf<String, String>()
     
@@ -438,7 +502,9 @@ fun buildUiState(
         progreso = progreso,
         errores = errores,
         puedeGuardar = errores.isEmpty(),
-        guardando = guardando
+        guardando = guardando,
+        evidenciaFotoUri = evidenciaFotoUri,
+        evidenciaArchivoUri = evidenciaArchivoUri
     )
 }
 

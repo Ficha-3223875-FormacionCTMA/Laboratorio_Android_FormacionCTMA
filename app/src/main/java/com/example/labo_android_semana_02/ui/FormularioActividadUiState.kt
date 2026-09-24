@@ -10,7 +10,9 @@ data class FormularioActividadUiState(
     val progreso: String = "0",
     val errores: Map<String, String> = emptyMap(),
     val puedeGuardar: Boolean = false,
-    val guardando: Boolean = false
+    val guardando: Boolean = false,
+    val evidenciaFotoUri: String? = null,
+    val evidenciaArchivoUri: String? = null
 ) {
     /**
      * HU-19 (CA-19.3): el formulario se considera vacío cuando ninguna de las entradas

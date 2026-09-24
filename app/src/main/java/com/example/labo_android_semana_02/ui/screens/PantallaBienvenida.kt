@@ -1,5 +1,6 @@
 package com.example.labo_android_semana_02.ui.screens
 
+import android.view.HapticFeedbackConstants
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.CircleShape
@@ -10,6 +11,9 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.hapticfeedback.HapticFeedbackType
+import androidx.compose.ui.platform.LocalHapticFeedback
+import androidx.compose.ui.platform.LocalView
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.font.FontWeight
@@ -27,6 +31,9 @@ fun PantallaBienvenida(
     onIngresar: () -> Unit,
     modifier: Modifier = Modifier
 ) {
+    val haptic = LocalHapticFeedback.current
+    val view = LocalView.current
+
     Box(
         modifier = modifier
             .fillMaxSize()
@@ -73,7 +80,11 @@ fun PantallaBienvenida(
 
             // CA-20.2 y CA-20.3: botón destacado que lleva al listado principal
             Button(
-                onClick = onIngresar,
+                onClick = {
+                    haptic.performHapticFeedback(HapticFeedbackType.LongPress)
+                    view.performHapticFeedback(HapticFeedbackConstants.CONTEXT_CLICK)
+                    onIngresar()
+                },
                 modifier = Modifier
                     .fillMaxWidth()
                     .height(52.dp)

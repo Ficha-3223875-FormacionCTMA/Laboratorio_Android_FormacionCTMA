@@ -10,5 +10,7 @@ data class ActividadFormativa(
     val descripcion: String,
     val progreso: Int,
     val fechaEntrega: Long, // Timestamp en milisegundos
-    val prioridad: Prioridad = Prioridad.MEDIA
+    val prioridad: Prioridad = Prioridad.MEDIA,
+    val evidenciaFotoUri: String? = null,
+    val evidenciaArchivoUri: String? = null
 )

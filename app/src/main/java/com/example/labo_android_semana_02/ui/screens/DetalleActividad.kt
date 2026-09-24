@@ -1,10 +1,14 @@
 package com.example.labo_android_semana_02.ui.screens
 
+import android.view.HapticFeedbackConstants
 import androidx.compose.foundation.layout.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.hapticfeedback.HapticFeedbackType
+import androidx.compose.ui.platform.LocalHapticFeedback
+import androidx.compose.ui.platform.LocalView
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.example.labo_android_semana_02.domain.ActividadFormativa
@@ -18,12 +22,22 @@ fun DetalleActividad(
     onBack: () -> Unit,
     modifier: Modifier = Modifier
 ) {
+    val haptic = LocalHapticFeedback.current
+    val view = LocalView.current
+    val triggerHaptic = {
+        haptic.performHapticFeedback(HapticFeedbackType.LongPress)
+        view.performHapticFeedback(HapticFeedbackConstants.CONTEXT_CLICK)
+    }
+
     Scaffold(
         topBar = {
             TopAppBar(
                 title = { Text("Detalle de Actividad") },
                 navigationIcon = {
-                    TextButton(onClick = onBack) {
+                    TextButton(onClick = {
+                        triggerHaptic()
+                        onBack()
+                    }) {
                         Text("< Volver")
                     }
                 }
@@ -61,6 +75,16 @@ fun DetalleActividad(
                 
                 Text(text = "Descripción", fontWeight = FontWeight.Bold)
                 Text(text = actividad.descripcion.ifBlank { "Sin descripción" })
+
+                if (!actividad.evidenciaFotoUri.isNullOrBlank()) {
+                    Text(text = "Evidencia Fotográfica", fontWeight = FontWeight.Bold)
+                    Text(text = actividad.evidenciaFotoUri, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.primary)
+                }
+
+                if (!actividad.evidenciaArchivoUri.isNullOrBlank()) {
+                    Text(text = "Evidencia de Archivo", fontWeight = FontWeight.Bold)
+                    Text(text = actividad.evidenciaArchivoUri, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.primary)
+                }
                 
                 Spacer(modifier = Modifier.weight(1f))
             }

@@ -1,5 +1,6 @@
 package com.example.labo_android_semana_02.ui.screens
 
+import android.view.HapticFeedbackConstants
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
@@ -7,7 +8,9 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.hapticfeedback.HapticFeedbackType
+import androidx.compose.ui.platform.LocalHapticFeedback
+import androidx.compose.ui.platform.LocalView
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.example.labo_android_semana_02.domain.ActividadFormativa
@@ -22,6 +25,13 @@ fun PantallaActividadesRemotas(
     onActividadClick: (ActividadFormativa) -> Unit,
     modifier: Modifier = Modifier
 ) {
+    val haptic = LocalHapticFeedback.current
+    val view = LocalView.current
+    val triggerHaptic = {
+        haptic.performHapticFeedback(HapticFeedbackType.LongPress)
+        view.performHapticFeedback(HapticFeedbackConstants.CONTEXT_CLICK)
+    }
+
     Scaffold(
         topBar = {
             TopAppBar(
@@ -42,7 +52,10 @@ fun PantallaActividadesRemotas(
                     ) {
                         Text(text = uiState.mensaje, color = MaterialTheme.colorScheme.error)
                         Spacer(modifier = Modifier.height(16.dp))
-                        Button(onClick = onRefresh) { Text("Reintentar") }
+                        Button(onClick = {
+                            triggerHaptic()
+                            onRefresh()
+                        }) { Text("Reintentar") }
                     }
                 }
                 is ActividadesUiState.Exito -> {
@@ -65,7 +78,10 @@ fun PantallaActividadesRemotas(
                                         modifier = Modifier.padding(start = 8.dp)
                                     )
                                     if (uiState.esError) {
-                                        TextButton(onClick = onRefresh) {
+                                        TextButton(onClick = {
+                                            triggerHaptic()
+                                            onRefresh()
+                                        }) {
                                             Text("Reintentar", style = MaterialTheme.typography.labelSmall)
                                         }
                                     }
